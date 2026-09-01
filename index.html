@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Suomi–italia -harjoitussovellus, taso A1" />
+    <meta name="theme-color" content="#FBFAF8" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Parliamo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <div class="topbar">
+          <div class="mark">Parl<i>ia</i>mo</div>
+          <div class="topstats">
+            <span class="chip hot" title="Putki"><b id="cStreak" class="num">0</b>pv</span>
+            <span class="chip" title="Kerrattavia"><b id="cDue" class="num">0</b>korttia</span>
+          </div>
+        </div>
+        <nav class="tabs">
+          <button data-tab="home" aria-current="true">Kurssi</button>
+          <button data-tab="stats">Tilastot</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section id="vHome" class="view on"></section>
+      <section id="vUnit" class="view"></section>
+      <section id="vStats" class="view"></section>
+    </main>
+
+    <div id="drill">
+      <div class="dtop">
+        <button class="back" id="dQuit">&larr; Lopeta</button>
+        <div class="meter"><span id="dBar" style="width: 0%"></span></div>
+        <div class="count" id="dCount">0/0</div>
+      </div>
+      <div class="dbody"><div class="stage" id="dStage"></div></div>
+      <div class="dfoot" id="dFoot"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
