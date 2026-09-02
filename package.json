@@ -12,6 +12,8 @@
     "test": "node scripts/test-logic.js"
   },
   "devDependencies": {
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "@cloudflare/vite-plugin": "^1.54.3",
+    "wrangler": "^4.128.0"
   }
 }
