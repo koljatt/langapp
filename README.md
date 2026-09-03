@@ -37,6 +37,9 @@ src/
 public/
   manifest.webmanifest  PWA metadata
   sw.js                 offline service worker
+  favicon.svg           browser tab icon
+  apple-touch-icon.png  iOS home-screen icon (180×180, opaque)
+  icon-*.png            manifest icons, one of them maskable
 scripts/check-data.js   data validation
 ```
 
@@ -90,6 +93,18 @@ Nouns in this curriculum already carry their gender in their own Italian form �
 ## Installing as an app (PWA)
 
 `public/manifest.webmanifest` and `public/sw.js` make the built app installable and usable offline. The service worker is network-first with a same-origin runtime cache: every successful response gets cached as you browse, so a repeat visit — including offline — is served from cache without needing to know the build's hashed filenames in advance. A new deploy just works, since Vite's content-hashed asset names never collide with the previous version's cache entries. It only registers over `http(s)`, so opening `dist/index.html` straight off disk (see *Running it* above) is unaffected.
+
+### On iPhone
+
+iOS ignores an SVG `apple-touch-icon` and quietly falls back to a screenshot of the page, so the home-screen icon is a real 180×180 PNG — opaque and square, because iOS applies its own squircle mask and would otherwise round an already-rounded corner and composite the soft edge against black. The manifest's icons keep their rounded corners, since those are shown unmasked, and the separate `maskable` one holds the *P* inside the inner 80% that Android is free to crop to.
+
+`viewport-fit=cover` was already set, but only `body` carried a safe-area inset — and the drill is `position:fixed`, so it escaped that entirely and ran its progress bar under the notch and its answer buttons under the home indicator. Both ends of the overlay, the sticky header and the horizontal gutters now read `env(safe-area-inset-*)` for themselves.
+
+The rest is standalone housekeeping: `theme-color` answers to `prefers-color-scheme`, so the status bar no longer stays cream in dark mode; the voice `<select>` moved to 16px, because anything smaller makes iOS zoom the whole page when it takes focus; and rubber-band scrolling, tap highlights and the double-tap delay are off, so it reads as an app rather than a page. Google Fonts are cached by the service worker too — iOS clears the browser's own HTTP cache on its own schedule, and without them an offline launch would come up in the wrong typeface.
+
+Speech needed a fix of its own. iOS won't start the synthesiser outside a user gesture, and the listening cards speak from a `setTimeout` — outside one. They stayed silent until you happened to press *Kuuntele*, so `speech.js` now unlocks the engine with a silent utterance on the first touch anywhere.
+
+Safari offers no install prompt: it's **Share → Add to Home Screen**.
 
 ## Vocabulary format
 

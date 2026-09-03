@@ -40,9 +40,33 @@ function pickVoice() {
   }
 }
 
+/**
+ * iOS ei päästä puhesynteesiä käyntiin ennen kuin se on kerran käynnistetty
+ * käyttäjän eleen sisällä. Osa korteista lukee sanan itsestään pienen viiveen
+ * jälkeen (setTimeout) eli eleen ulkopuolella — kotinäytöltä avatussa
+ * sovelluksessa juuri ne jäisivät mykiksi, kunnes käyttäjä sattuisi painamaan
+ * kuuntelunappia. Siksi moottori avataan äänettömällä lausumalla heti
+ * ensimmäisestä kosketuksesta, tuli se mistä tahansa. Samalla äänet ehtivät
+ * ladautua: iOS palauttaa getVoices():n tyhjänä ennen ensimmäistä elettä.
+ */
+let unlocked = false;
+function unlockSpeech() {
+  if (unlocked) return;
+  unlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch {
+    // Ei haittaa: say() yrittää joka tapauksessa normaalisti.
+  }
+  pickVoice();
+}
+
 if (canSpeak) {
   pickVoice();
   speechSynthesis.onvoiceschanged = pickVoice;
+  window.addEventListener("pointerdown", unlockSpeech, { once: true, capture: true });
 }
 
 /** Onko koneella lainkaan italiankielistä ääntä. */
@@ -88,6 +112,9 @@ export function say(text, rate = 0.9) {
   if (!voice) return;
   try {
     speechSynthesis.cancel();
+    // iOS jättää moottorin toisinaan paused-tilaan taustalta palattaessa,
+    // jolloin uusi lausuma jäisi jonoon soimatta.
+    if (speechSynthesis.paused) speechSynthesis.resume();
     const u = new SpeechSynthesisUtterance(String(text).trim());
     u.voice = voice;
     // Sama alue kuin äänellä: ristiriitaisella lang-arvolla osa selaimista

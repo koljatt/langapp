@@ -2,13 +2,19 @@
   "name": "Parliamo — Finnish–Italian A1",
   "short_name": "Parliamo",
   "description": "Suomi–italia-harjoitussovellus, taso A1",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#FBFAF8",
   "theme_color": "#FBFAF8",
   "lang": "fi",
+  "dir": "ltr",
+  "categories": ["education"],
   "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

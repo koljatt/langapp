@@ -4,10 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Suomi–italia -harjoitussovellus, taso A1" />
-    <meta name="theme-color" content="#FBFAF8" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#FBFAF8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0F1013" media="(prefers-color-scheme: dark)" />
+
+    <!-- Kotinäytölle lisättynä iOS lukee näitä, ei manifestia (iOS < 16.4). -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Parliamo" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- iOS ei osaa SVG-kuvaketta: ilman PNG:tä kotinäytölle päätyisi kuvakaappaus sivusta. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <title>Parliamo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
