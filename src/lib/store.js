@@ -4,12 +4,14 @@ const LS_KEY = "parliamo.v1";
 
 export const defaultState = () => ({
   v: 1,
-  /** avain -> { b: laatikko, due: aikaleima, seen, miss, t } */
+  /** avain -> { b: laatikko, due, seen, miss, t, e: helppouskerroin, h: viime vastaukset, lp: romahdukset } */
   items: {},
   /** "2026-09-01" -> vastausten määrä */
   log: {},
+  /** Missä kompastelee: harjoitustavoittain, suunnittain ja virhelajeittain. */
+  stats: { modes: {}, dirs: {}, errs: {} },
   best: 0,
-  settings: { choice: 1, type: 1, listen: 1, recall: 1, goal: 25 },
+  settings: { choice: 1, type: 1, listen: 1, recall: 1, goal: 25, hard: 1, voiceName: "" },
   t: 0,
 });
 
@@ -24,6 +26,7 @@ export function load() {
       ...parsed,
       items: parsed.items || {},
       log: parsed.log || {},
+      stats: { ...base.stats, ...(parsed.stats || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) },
     };
   } catch (err) {
@@ -49,10 +52,43 @@ export function reset() {
   }
 }
 
-/** Yhdistää kaksi tilaa: korttikohtaisesti tuorein voittaa. */
+/** Kompastuskivitilastot yhteen: laskurit ja { n, ok } -parit suurempina. */
+function mergeStats(a = {}, b = {}) {
+  const out = {};
+  for (const group of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const x = a[group] || {};
+    const y = b[group] || {};
+    out[group] = {};
+    for (const name of new Set([...Object.keys(x), ...Object.keys(y)])) {
+      const p = x[name];
+      const q = y[name];
+      if (typeof p === "number" || typeof q === "number") {
+        out[group][name] = Math.max(p || 0, q || 0);
+      } else {
+        out[group][name] = {
+          n: Math.max((p && p.n) || 0, (q && q.n) || 0),
+          ok: Math.max((p && p.ok) || 0, (q && q.ok) || 0),
+        };
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Yhdistää kahden koneen tilat: korttikohtaisesti tuorein voittaa.
+ * Laskurit otetaan suurempina eikä summana — sama historia molemmilla
+ * koneilla laskettaisiin muuten kahteen kertaan.
+ */
 export function merge(a, b) {
   if (!b) return a;
-  const out = { ...defaultState(), ...a, items: { ...a.items }, log: { ...a.log } };
+  const out = {
+    ...defaultState(),
+    ...a,
+    items: { ...a.items },
+    log: { ...a.log },
+    stats: mergeStats(a.stats, b.stats),
+  };
   for (const [k, y] of Object.entries(b.items || {})) {
     const x = out.items[k];
     if (!x || (y.t || 0) > (x.t || 0)) out.items[k] = y;

@@ -40,6 +40,11 @@ export default [
       ["la cosa","asia, esine"],
       ["il problema","ongelma","maskuliini, vaikka -a"],
     ],
+    ex: [
+      ["___ studente ha uno zaino.", "lo"],
+      ["Ho ___ amica a Roma.", "un'"],
+      ["___ acqua, per favore.", "l'"],
+    ],
   },
   {
     id: "u7",
@@ -80,6 +85,11 @@ export default [
       ["lavoro a Helsinki","työskentelen Helsingissä"],
       ["cosa cerchi?","mitä etsit?"],
     ],
+    ex: [
+      ["Noi ___ italiano.", "parliamo"],
+      ["Io ___ a Helsinki.", "lavoro"],
+      ["Io ___ un libro.", "cerco"],
+    ],
   },
   {
     id: "u8",
@@ -117,6 +127,11 @@ export default [
       ["leggo un libro","luen kirjaa"],
       ["prendo il treno","menen junalla"],
       ["non capisco bene","en ymmärrä hyvin"],
+    ],
+    ex: [
+      ["Io ___ un libro.", "leggo"],
+      ["— Capisci? — No, non ___ bene.", "capisco"],
+      ["Io ___ il treno per Roma.", "prendo"],
     ],
   },
   {
@@ -163,6 +178,11 @@ export default [
       ["l'anno","vuosi"],
       ["il giorno","päivä"],
     ],
+    ex: [
+      ["— Che ore sono? — ___ le tre e mezza.", "sono"],
+      ["Dopo domenica viene ___.", "lunedì"],
+      ["Il primo mese dell'anno è ___.", "gennaio"],
+    ],
   },
   {
     id: "u10",
@@ -201,6 +221,11 @@ export default [
       ["poi","sitten"],
       ["prima","ensin, ennen"],
       ["dopo","jälkeen, sen jälkeen"],
+    ],
+    ex: [
+      ["La mattina ___ alle sette.", "mi sveglio"],
+      ["Prima faccio la doccia, ___ faccio colazione.", "poi"],
+      ["Non esco ___ la notte.", "mai"],
     ],
   }
 ];

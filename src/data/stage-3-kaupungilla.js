@@ -42,6 +42,11 @@ export default [
       ["ancora","vielä, lisää"],
       ["basta così","riittää näin"],
     ],
+    ex: [
+      ["___ un caffè, per favore.", "vorrei"],
+      ["Un cappuccino ___ zucchero, grazie.", "senza"],
+      ["— Ancora un po'? — No grazie, ___.", "basta così"],
+    ],
   },
   {
     id: "u12",
@@ -82,6 +87,11 @@ export default [
       ["economico","edullinen"],
       ["ho fame","minulla on nälkä"],
       ["buonissimo","erittäin hyvää"],
+    ],
+    ex: [
+      ["Vorrei un chilo ___ mele.", "di"],
+      ["— Quanto costa il formaggio? — È ___.", "economico"],
+      ["Questo pesce è ___!", "buonissimo"],
     ],
   },
   {
@@ -126,6 +136,11 @@ export default [
       ["all'angolo","kulmassa"],
       ["scusi, dov'è la stazione?","anteeksi, missä on asema?"],
     ],
+    ex: [
+      ["___ una farmacia qui vicino?", "c'è"],
+      ["La banca è ___ alla chiesa.", "vicino"],
+      ["Scusi, ___ la stazione?", "dov'è"],
+    ],
   },
   {
     id: "u14",
@@ -165,6 +180,11 @@ export default [
       ["tranquillo","rauhallinen"],
       ["in affitto","vuokralla"],
     ],
+    ex: [
+      ["La mia casa è ___ ma comoda.", "piccola", "adjektiivi taipuu: piccolo → piccola"],
+      ["Il divano è nel ___.", "soggiorno"],
+      ["Abito ___ centro.", "in"],
+    ],
   },
   {
     id: "u15",
@@ -203,6 +223,11 @@ export default [
       ["il posto","paikka, istumapaikka"],
       ["la fermata","pysäkki"],
       ["scendere","nousta pois, laskeutua"],
+    ],
+    ex: [
+      ["Vado a Roma ___ treno.", "in"],
+      ["Il treno è ___: arriva alle nove.", "in ritardo"],
+      ["— Quanto tempo ci vuole? — ___ due ore.", "ci vogliono"],
     ],
   }
 ];

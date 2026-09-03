@@ -1,7 +1,10 @@
 import { app, el } from "../app.js";
-import { overview, streak, INTERVALS, KNOWN_BOX } from "../lib/srs.js";
-import { todayKey } from "../lib/text.js";
-import { canSpeak, hasItalianVoice } from "../lib/speech.js";
+import { BY_KEY } from "../data/index.js";
+import { difficulty, overview, streak, weakSpots, INTERVALS, KNOWN_BOX } from "../lib/srs.js";
+import { escapeHtml, todayKey, MISS_LABELS } from "../lib/text.js";
+import { canSpeak, hasItalianVoice, listItalianVoices, onVoicesArrive, refreshVoice, say } from "../lib/speech.js";
+import { startSession } from "./drill.js";
+import { SPEAKER } from "./icons.js";
 import * as store from "../lib/store.js";
 
 const MODES = [
@@ -11,7 +14,71 @@ const MODES = [
   ["recall", "Muistikortti", "Itsearvio, vahvoille sanoille"],
 ];
 
+const MODE_NAMES = { choice: "Monivalinta", type: "Kirjoitus", listen: "Kuuntelu", recall: "Muistikortti" };
+const DIR_NAMES = { fi2it: "Suomesta italiaksi", it2fi: "Italiasta suomeksi" };
+
 const BOX_LABELS = ["Uusi", "1 pv", "2 pv", "4 pv", "8 pv", "16 pv", "32 pv", "64 pv"];
+
+/** Palkkirivi kuten muistiportaissa, mutta osuutena eikä kappalemääränä. */
+const bar = (label, pct, right, color) =>
+  `<div class="boxrow"><span class="bl">${label}</span><span class="bm"><span style="width:${Math.round(pct * 100)}%;background:${color}"></span></span><span class="bv">${right}</span></div>`;
+
+/**
+ * "Missä kompastelet" — vaikeimmat sanat, heikoin harjoitustapa ja suunta,
+ * toistuvat virhelajit ja heikoimmat jaksot. Tämä on se näkymä, jossa
+ * kertynyt vastaushistoria muuttuu joksikin, mitä voi tehdä.
+ */
+function weakPanel(s) {
+  const w = weakSpots(s);
+  if (!w.cards.length && !w.modes.length && !w.errs.length) return "";
+
+  let h = '<div class="panel"><span class="eyebrow">Missä kompastelet</span>';
+
+  if (w.cards.length) {
+    h += '<div class="wordlist" style="margin-top:8px">';
+    for (const key of w.cards) {
+      const c = BY_KEY.get(key);
+      const r = s.items[key];
+      h += `<div class="row">
+        <span class="l">${escapeHtml(c.it)}</span>
+        <span class="r">${escapeHtml(c.fi)}<small>${r.miss} virhettä / ${r.seen} kysyttyä</small></span>
+        <span class="hbar" title="vaikeus ${Math.round(difficulty(s, key) * 100)} %"><span style="width:${Math.round(difficulty(s, key) * 100)}%"></span></span>
+      </div>`;
+    }
+    h += `</div><button class="btn ghost" data-action="hard" style="margin-top:10px">Treenaa vaikeat sanat</button>`;
+  }
+
+  if (w.modes.length > 1 || w.dirs.length > 1) {
+    h += '<div style="margin-top:18px"><span class="eyebrow">Osumatarkkuus</span><div style="margin-top:8px">';
+    for (const m of w.modes) {
+      h += bar(MODE_NAMES[m.k] || m.k, m.pct, `${Math.round(m.pct * 100)}%`, m.pct < 0.7 ? "var(--warm)" : "var(--ok)");
+    }
+    for (const d of w.dirs) {
+      h += bar(DIR_NAMES[d.k] || d.k, d.pct, `${Math.round(d.pct * 100)}%`, d.pct < 0.7 ? "var(--warm)" : "var(--ok)");
+    }
+    h += "</div></div>";
+  }
+
+  if (w.errs.length) {
+    const most = w.errs.reduce((a, x) => Math.max(a, x.n), 1);
+    h += '<div style="margin-top:18px"><span class="eyebrow">Mikä menee pieleen</span><div style="margin-top:8px">';
+    for (const e of w.errs.slice(0, 5)) {
+      h += bar(MISS_LABELS[e.k] || e.k, e.n / most, e.n, "var(--accent)");
+    }
+    h += "</div></div>";
+  }
+
+  if (w.units.length) {
+    h += `<div style="margin-top:18px"><span class="eyebrow">Takkuavat jaksot</span><div style="margin-top:6px">${w.units
+      .map(
+        (u) =>
+          `<button class="linkrow" data-unit="${u.i}"><span>${String(u.unit.n).padStart(2, "0")} · ${escapeHtml(u.unit.title)}</span><span class="num">${u.hard} vaikeaa</span></button>`,
+      )
+      .join("")}</div></div>`;
+  }
+
+  return h + "</div>";
+}
 
 export function renderStats() {
   const s = app.state;
@@ -39,6 +106,8 @@ export function renderStats() {
     })
     .join("")}</div><div class="legend"><span>${days[0].slice(5)}</span><span>tänään</span></div></div>`;
 
+  h += weakPanel(s);
+
   h += '<div class="panel"><span class="eyebrow">Muistiportaat</span><div style="margin-top:8px">';
   o.boxes.forEach((n, i) => {
     const color = i >= KNOWN_BOX ? "var(--ok)" : i >= 2 ? "var(--accent)" : "var(--warm)";
@@ -59,8 +128,28 @@ export function renderStats() {
     h += `<div class="setting"><span class="sl">${label}<small>${hint}</small></span>
       <button class="sw" role="switch" aria-checked="${s.settings[key] ? "true" : "false"}" data-toggle="${key}" aria-label="${label}"></button></div>`;
   }
+  if (canSpeak) {
+    const voices = listItalianVoices();
+    h += voices.length
+      ? `<div class="setting"><span class="sl">Ääni<small>Pysyy samana vaikka käyttöjärjestelmä lisää tai muuttaa ääniä</small></span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <select data-voice style="max-width:150px">
+            <option value="">Automaattinen</option>
+            ${voices
+              .map(
+                (v) =>
+                  `<option value="${escapeHtml(v.name)}" ${s.settings.voiceName === v.name ? "selected" : ""}>${escapeHtml(v.name)}</option>`,
+              )
+              .join("")}
+          </select>
+          <button class="spk" data-action="testvoice" aria-label="Kokeile ääntä">${SPEAKER()}</button>
+        </span></div>`
+      : `<div class="setting"><span class="sl">Ääni<small>Italiankielisiä ääniä ei löytynyt tästä selaimesta</small></span></div>`;
+  }
   h += `<div class="setting"><span class="sl">Päivätavoite<small>${s.settings.goal} korttia päivässä</small></span>
     <input type="range" min="10" max="60" step="5" value="${s.settings.goal}" data-goal style="width:120px;accent-color:var(--accent)"></div>`;
+  h += `<div class="setting"><span class="sl">Painota kompastuskiviä<small>Neljännes sessiosta sanoille, jotka jäävät toistuvasti</small></span>
+    <button class="sw" role="switch" aria-checked="${s.settings.hard ? "true" : "false"}" data-hard aria-label="Painota kompastuskiviä"></button></div>`;
   h += "</div></div>";
 
   h += `<div class="panel"><span class="eyebrow">Edistyminen</span>
@@ -91,6 +180,33 @@ export function renderStats() {
     app.save();
     renderStats();
   });
+  host.querySelector("[data-hard]").addEventListener("click", () => {
+    s.settings.hard = s.settings.hard ? 0 : 1;
+    app.save();
+    renderStats();
+  });
+  const voiceSel = host.querySelector("[data-voice]");
+  if (voiceSel) {
+    voiceSel.addEventListener("change", () => {
+      s.settings.voiceName = voiceSel.value;
+      app.save();
+      refreshVoice();
+      say("Buongiorno");
+    });
+  }
+  const testVoice = host.querySelector('[data-action="testvoice"]');
+  if (testVoice) testVoice.addEventListener("click", () => say("Buongiorno"));
+  onVoicesArrive(() => {
+    if (app.tab === "stats") renderStats();
+  });
+  const focus = host.querySelector('[data-action="hard"]');
+  if (focus) focus.addEventListener("click", () => startSession(null, { focus: "hard" }));
+  host.querySelectorAll("[data-unit]").forEach((b) =>
+    b.addEventListener("click", () => {
+      app.unitIndex = Number(b.dataset.unit);
+      app.goto("unit");
+    }),
+  );
   host.querySelector('[data-action="export"]').addEventListener("click", () => store.exportFile(s));
   host.querySelector('[data-action="import"]').addEventListener("click", async () => {
     try {

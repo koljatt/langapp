@@ -1,6 +1,6 @@
 import { app, el } from "../app.js";
 import { CURRICULUM, CARDS, STAGES } from "../data/index.js";
-import { boxOf, dueKeys, isNew, openCount, streak, unitStats, KNOWN_BOX } from "../lib/srs.js";
+import { boxOf, dueKeys, hardKeys, isNew, openCount, streak, unitStats, KNOWN_BOX } from "../lib/srs.js";
 import { escapeHtml, todayKey } from "../lib/text.js";
 import { ring, LOCK } from "./icons.js";
 import { startSession } from "./drill.js";
@@ -9,6 +9,7 @@ export function renderHome() {
   const s = app.state;
   const open = openCount(s);
   const due = dueKeys(s).length;
+  const hard = hardKeys(s, null);
   const known = CARDS.filter((c) => boxOf(s, c.key) >= KNOWN_BOX).length;
   const newAvailable = CURRICULUM.slice(0, open)
     .flatMap((u) => u.keys)
@@ -32,6 +33,22 @@ export function renderHome() {
     h += '<button class="btn ghost" data-action="force">Harjoittele silti</button>';
   }
   h += "</div>";
+
+  // Kompastuskivet nostetaan omaksi harjoitukseksi heti kertauksen perään.
+  if (hard.length >= 3) {
+    const peek = hard
+      .slice(0, 3)
+      .map((k) => escapeHtml(CARDS.find((c) => c.key === k).it))
+      .join(" · ");
+    h += `<div class="focus">
+      <div>
+        <span class="eyebrow">Kompastuskivet</span>
+        <h3>${hard.length} sanaa jää toistuvasti</h3>
+        <p class="sub">${peek}${hard.length > 3 ? " …" : ""}</p>
+      </div>
+      <button class="btn ghost" data-action="hard">Treenaa nämä</button>
+    </div>`;
+  }
 
   h += `<div class="grid2">
     <div class="stat"><div class="v">${known}</div><div class="l">sanaa osattu / ${CARDS.length}</div></div>
@@ -73,5 +90,7 @@ export function renderHome() {
   const review = host.querySelector('[data-action="review"]');
   if (review) review.addEventListener("click", () => startSession(null));
   const force = host.querySelector('[data-action="force"]');
-  if (force) force.addEventListener("click", () => startSession(null, true));
+  if (force) force.addEventListener("click", () => startSession(null, { force: true }));
+  const focus = host.querySelector('[data-action="hard"]');
+  if (focus) focus.addEventListener("click", () => startSession(null, { focus: "hard" }));
 }

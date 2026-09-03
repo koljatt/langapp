@@ -40,6 +40,11 @@ export default [
       ["d'inverno","talvella"],
       ["fa un freddo cane","on koiran kylmä","puhekielinen"],
     ],
+    ex: [
+      ["D'inverno ___ spesso.", "nevica"],
+      ["— Che tempo fa? — ___ caldo oggi.", "fa"],
+      ["In estate c'è ___ e fa caldo.", "il sole"],
+    ],
   },
   {
     id: "u17",
@@ -80,6 +85,11 @@ export default [
       ["noioso","tylsä"],
       ["mi piace correre","pidän juoksemisesta"],
     ],
+    ex: [
+      ["___ molto la musica.", "mi piace"],
+      ["Non mi piace il calcio: è ___.", "noioso"],
+      ["Il fine settimana mi piace ___.", "nuotare"],
+    ],
   },
   {
     id: "u18",
@@ -118,6 +128,11 @@ export default [
       ["stanco","väsynyt"],
       ["il raffreddore","flunssa"],
       ["riposare","levätä"],
+    ],
+    ex: [
+      ["Ho mal di ___ e sto male.", "testa"],
+      ["Sono molto ___.", "stanco"],
+      ["Non sto bene, ho la ___.", "febbre"],
     ],
   },
   {
@@ -159,6 +174,11 @@ export default [
       ["è possibile","se on mahdollista"],
       ["so nuotare","osaan uida"],
     ],
+    ex: [
+      ["___ aiutarmi, per favore?", "puoi"],
+      ["Non ___ venire oggi: devo lavorare.", "posso"],
+      ["___ nuotare bene.", "so"],
+    ],
   },
   {
     id: "u20",
@@ -197,6 +217,11 @@ export default [
       ["dove sei stato?","missä olit?"],
       ["è stato bello","se oli mukavaa"],
       ["fa due giorni","kaksi päivää sitten","tai: due giorni fa"],
+    ],
+    ex: [
+      ["Ieri ___ un libro interessante.", "ho letto"],
+      ["— Dove sei stato? — ___ a Roma.", "sono stato"],
+      ["La settimana scorsa ___ una pizza buonissima.", "ho mangiato"],
     ],
   },
   {
@@ -237,6 +262,11 @@ export default [
       ["che lavoro fai?","mitä työtä teet?"],
       ["studio all'università","opiskelen yliopistossa"],
     ],
+    ex: [
+      ["— Che lavoro fai? — ___ come ingegnere.", "lavoro"],
+      ["Domani ho una ___ in ufficio.", "riunione"],
+      ["Studio ___ università.", "all'"],
+    ],
   },
   {
     id: "u22",
@@ -275,6 +305,11 @@ export default [
       ["il camerino","sovituskoppi"],
       ["mi sta bene","tämä sopii minulle"],
       ["troppo stretto","liian kireä"],
+    ],
+    ex: [
+      ["Il cielo è ___.", "azzurro"],
+      ["Il vestito è troppo ___.", "stretto"],
+      ["Posso ___ questa maglietta?", "provare"],
     ],
   },
   {
@@ -315,6 +350,11 @@ export default [
       ["allora","no niin, siis"],
       ["magari","kunpa; ehkä"],
     ],
+    ex: [
+      ["___ ti chiami?", "come"],
+      ["Non capisco: può ___, per favore?", "ripetere"],
+      ["— Puoi aiutarmi? — Sì, ___.", "certo"],
+    ],
   },
   {
     id: "u24",
@@ -354,6 +394,11 @@ export default [
       ["che ne dici?","mitä sanot?"],
       ["volentieri","mielelläni"],
       ["non vedo l'ora","en malta odottaa"],
+    ],
+    ex: [
+      ["Domani ___ a Roma.", "vado"],
+      ["— Vieni al cinema? — Sì, ___!", "volentieri"],
+      ["___ imparare l'italiano.", "ho intenzione di"],
     ],
   }
 ];

@@ -6,6 +6,8 @@
     <meta name="description" content="Suomi–italia -harjoitussovellus, taso A1" />
     <meta name="theme-color" content="#FBFAF8" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <title>Parliamo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,6 +28,7 @@
         </div>
         <nav class="tabs">
           <button data-tab="home" aria-current="true">Kurssi</button>
+          <button data-tab="verbs">Verbit</button>
           <button data-tab="stats">Tilastot</button>
         </nav>
       </div>
@@ -34,6 +37,7 @@
     <main class="wrap">
       <section id="vHome" class="view on"></section>
       <section id="vUnit" class="view"></section>
+      <section id="vVerbs" class="view"></section>
       <section id="vStats" class="view"></section>
     </main>
 

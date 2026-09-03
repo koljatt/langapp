@@ -38,6 +38,11 @@ export default [
       ["buon appetito","hyvää ruokahalua"],
       ["buona giornata","hyvää päivänjatkoa"],
     ],
+    ex: [
+      ["— Grazie mille! — ___.", "prego"],
+      ["— Come stai? — Sto bene, ___?", "e tu"],
+      ["— Come va? — Non c'è male, ___.", "grazie"],
+    ],
   },
   {
     id: "u2",
@@ -75,6 +80,11 @@ export default [
       ["l'amico","ystävä","miehestä"],
       ["l'amica","ystävä","naisesta"],
       ["questo è...","tämä on..."],
+    ],
+    ex: [
+      ["— Come ti chiami? — ___ Marco.", "mi chiamo"],
+      ["Io ___ Sakari.", "sono"],
+      ["Noi ___ amici.", "siamo"],
     ],
   },
   {
@@ -117,6 +127,11 @@ export default [
       ["quanti anni hai?","kuinka vanha olet?"],
       ["ho trent'anni","olen 30-vuotias"],
     ],
+    ex: [
+      ["— Quanti anni hai? — ___ trent'anni.", "ho"],
+      ["Noi ___ due amici.", "abbiamo"],
+      ["Loro ___ trenta euro.", "hanno"],
+    ],
   },
   {
     id: "u4",
@@ -155,6 +170,11 @@ export default [
       ["il nord","pohjoinen"],
       ["il sud","etelä"],
     ],
+    ex: [
+      ["Io sono ___ e parlo finlandese.", "finlandese"],
+      ["Studio l'italiano ___.", "un po'"],
+      ["Vivo ___ Helsinki, ma il paese è la Finlandia.", "a"],
+    ],
   },
   {
     id: "u5",
@@ -192,6 +212,11 @@ export default [
       ["sono sposato","olen naimisissa"],
       ["sono single","olen sinkku"],
       ["il figlio unico","ainoa lapsi"],
+    ],
+    ex: [
+      ["— Hai fratelli? — Sì, ho una ___.", "sorella"],
+      ["Il padre di mio padre è mio ___.", "nonno"],
+      ["Non sono sposato, sono ___.", "single"],
     ],
   }
 ];

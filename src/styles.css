@@ -5,7 +5,7 @@
   --accent:#1B4FD8; --accent-ink:#FFFFFF; --accent-wash:#EBF0FF;
   --ok:#1B6F4C; --ok-wash:#E6F3EC;
   --bad:#BE3A24; --bad-wash:#FBEBE7;
-  --warm:#B4661A;
+  --warm:#B4661A; --warm-wash:#FBF0E2;
   --shadow:0 1px 2px rgba(20,22,30,.05), 0 8px 24px -12px rgba(20,22,30,.14);
   --r:14px;
 }
@@ -16,7 +16,7 @@
     --accent:#88A9FF; --accent-ink:#0F1013; --accent-wash:#1B2440;
     --ok:#5CC094; --ok-wash:#12291F;
     --bad:#F07A63; --bad-wash:#2E1915;
-    --warm:#E2A250;
+    --warm:#E2A250; --warm-wash:#2B2113;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
   }
 }
@@ -26,7 +26,7 @@
   --accent:#88A9FF; --accent-ink:#0F1013; --accent-wash:#1B2440;
   --ok:#5CC094; --ok-wash:#12291F;
   --bad:#F07A63; --bad-wash:#2E1915;
-  --warm:#E2A250;
+  --warm:#E2A250; --warm-wash:#2B2113;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
 }
 *{box-sizing:border-box}
@@ -262,3 +262,55 @@ main{padding:22px 0 64px}
 .sync{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--muted); text-align:center; padding:10px 0 0}
 .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:.92rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+/* ---------- kompastuskivet ---------- */
+.tag{
+  align-self:center; font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.62rem; letter-spacing:.1em; text-transform:uppercase;
+  border-radius:99px; padding:3px 9px; border:1px solid currentColor;
+}
+.tag.hard{color:var(--warm)}
+.focus{
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--warm);
+  border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.focus h3{font-size:1.05rem; margin-top:2px}
+.focus .sub{color:var(--muted); font-size:.85rem; font-family:"Bodoni Moda",Georgia,serif; font-style:italic}
+.focus .btn{margin-left:auto; width:auto; flex:none}
+.hbar{width:46px; height:6px; border-radius:99px; background:var(--line-soft); overflow:hidden; flex:none}
+.hbar span{display:block; height:100%; background:var(--warm); border-radius:99px}
+.dot.hard{background:var(--warm); box-shadow:0 0 0 3px var(--bad-wash)}
+.linkrow{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+  text-align:left; padding:10px 2px; border-bottom:1px solid var(--line-soft); font-size:.9rem;
+}
+.linkrow:last-child{border-bottom:none}
+.linkrow:hover{color:var(--accent)}
+.linkrow .num{color:var(--muted); font-size:.8rem; flex:none}
+.typed.near{border-color:var(--warm); background:var(--warm-wash)}
+.verdict .vt.near{color:var(--warm)}
+@media (max-width:460px){
+  .focus{flex-direction:column; align-items:stretch}
+  .focus .btn{margin-left:0; width:100%}
+}
+
+/* ---------- verbit-välilehti ---------- */
+.unit.noidx{grid-template-columns:1fr auto}
+
+/* ---------- lauseharjoitus (cloze) ---------- */
+.big.cloze{font-family:Archivo,sans-serif; font-weight:600; font-size:clamp(1.3rem,5.5vw,1.9rem); line-height:1.4; letter-spacing:-.01em; text-align:center}
+.big.cloze .blank{
+  display:inline-block; min-width:2.4em; border-bottom:2px solid var(--accent);
+  color:var(--accent); text-align:center; margin:0 2px;
+}
+
+/* ---------- suku (il/la) ---------- */
+.opts.gender2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.opts.gender2 .opt{justify-content:center; text-align:center; font-size:1.05rem; font-weight:600}
+
+/* ---------- ääniasetus ---------- */
+select{
+  background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:8px 10px; font-size:.88rem; color:var(--ink); font-family:inherit;
+}
+select:focus{outline:none; border-color:var(--accent)}
