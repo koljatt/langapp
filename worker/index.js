@@ -40,8 +40,8 @@ const json = (body, status = 200) =>
 
 const clean = (v) => String(v ?? "").slice(0, MAX_TEXT);
 
-async function gemini(env, system, contents, { json: asJson = false, maxTokens = 400 } = {}) {
-  const model = env.GEMINI_MODEL || "gemini-flash-latest";
+async function gemini(env, system, contents, { json: asJson = false, maxTokens = 1024 } = {}) {
+  const model = env.GEMINI_MODEL || "gemini-3.8-flash";
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
@@ -51,6 +51,8 @@ async function gemini(env, system, contents, { json: asJson = false, maxTokens =
       generationConfig: {
         maxOutputTokens: maxTokens,
         temperature: 0.7,
+        // maxOutputTokens rajaa myös ajattelutokenit: matala taso pitää vastauksen mahtumassa rajaan.
+        thinkingConfig: { thinkingLevel: "low" },
         ...(asJson ? { responseMimeType: "application/json" } : {}),
       },
     }),
@@ -63,7 +65,7 @@ async function gemini(env, system, contents, { json: asJson = false, maxTokens =
 async function explain(env, b) {
   const dir = b.dir === "it2fi" ? "italiasta suomeen" : "suomesta italiaan";
   const prompt = `Suunta: ${dir}\nItaliaksi: ${clean(b.it)}\nSuomeksi: ${clean(b.fi)}\nOpiskelijan vastaus: ${clean(b.answer) || "(tyhjä)"}`;
-  const text = await gemini(env, EXPLAIN_SYSTEM, [{ role: "user", parts: [{ text: prompt }] }], { maxTokens: 300 });
+  const text = await gemini(env, EXPLAIN_SYSTEM, [{ role: "user", parts: [{ text: prompt }] }], { maxTokens: 1024 });
   return { text };
 }
 
@@ -79,7 +81,7 @@ async function roleplay(env, b) {
   if (!contents.length || contents[0].role !== "user") {
     contents.unshift({ role: "user", parts: [{ text: "(aloita keskustelu tervehtimällä)" }] });
   }
-  const raw = await gemini(env, roleplaySystem(scene), contents, { json: true, maxTokens: 500 });
+  const raw = await gemini(env, roleplaySystem(scene), contents, { json: true, maxTokens: 1024 });
   try {
     const o = JSON.parse(raw);
     return { reply: clean(o.reply), fi: clean(o.fi), fix: clean(o.fix) };
