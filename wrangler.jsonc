@@ -1,10 +1,20 @@
 {
   "name": "langapp",
+  "main": "worker/index.js",
   "compatibility_date": "2026-08-31",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // Gemini-mallin tunnus Googlen mallilistasta; vaihda tähän haluamasi Flash-malli.
+    "GEMINI_MODEL": "gemini-flash-latest"
+  },
+  "ratelimits": [
+    { "name": "LIMITER", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }
+  ]
 }

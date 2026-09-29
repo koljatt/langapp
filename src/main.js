@@ -5,10 +5,11 @@ import { renderHome } from "./ui/home.js";
 import { renderUnit } from "./ui/unit.js";
 import { renderVerbs } from "./ui/verbs.js";
 import { renderStats } from "./ui/stats.js";
+import { renderChatView } from "./ui/chat.js";
 import { initDrill } from "./ui/drill.js";
 import { onVoicesArrive } from "./lib/speech.js";
 
-const VIEWS = { home: "vHome", unit: "vUnit", verbs: "vVerbs", stats: "vStats" };
+const VIEWS = { home: "vHome", unit: "vUnit", verbs: "vVerbs", chat: "vChat", stats: "vStats" };
 
 app.goto = (tab) => {
   app.tab = tab;
@@ -26,6 +27,7 @@ app.render = () => {
   if (app.tab === "home") renderHome();
   else if (app.tab === "unit") renderUnit();
   else if (app.tab === "verbs") renderVerbs();
+  else if (app.tab === "chat") renderChatView();
   else if (app.tab === "stats") renderStats();
 };
 

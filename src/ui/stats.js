@@ -158,6 +158,8 @@ export function renderStats() {
     <input type="range" min="10" max="60" step="5" value="${s.settings.goal}" data-goal style="width:120px;accent-color:var(--accent)"></div>`;
   h += `<div class="setting"><span class="sl">Painota kompastuskiviä<small>Neljännes sessiosta sanoille, jotka jäävät toistuvasti</small></span>
     <button class="sw" role="switch" aria-checked="${s.settings.hard ? "true" : "false"}" data-hard aria-label="Painota kompastuskiviä"></button></div>`;
+  h += `<div class="setting"><span class="sl">Tekoälyn pääsykoodi<small>Selitykset ja keskustelu (Gemini). Sama koodi kuin Workerin APP_TOKEN</small></span>
+    <input type="password" class="typed" data-token value="${escapeHtml(s.settings.aiToken || "")}" autocomplete="off" style="width:130px"></div>`;
   h += "</div></div>";
 
   h += `<div class="panel"><span class="eyebrow">Edistyminen</span>
@@ -187,6 +189,10 @@ export function renderStats() {
     s.settings.goal = Number(goal.value);
     app.save();
     renderStats();
+  });
+  host.querySelector("[data-token]").addEventListener("change", (e) => {
+    s.settings.aiToken = e.target.value.trim();
+    app.save();
   });
   host.querySelector("[data-hard]").addEventListener("click", () => {
     s.settings.hard = s.settings.hard ? 0 : 1;

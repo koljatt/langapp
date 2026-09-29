@@ -27,6 +27,7 @@ import {
   shuffle,
   todayKey,
 } from "../lib/text.js";
+import { ai } from "../lib/ai.js";
 import { canListen, hasItalianVoice, listenOnce, say, stopSpeaking } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
 
@@ -266,6 +267,29 @@ function bindMic(host, card) {
   });
 }
 
+/** "Selitä" — Gemini kertoo miksi vastaus meni väärin. Vain väärille/melkein-vastauksille. */
+function explainButton() {
+  return '<div class="micbox"><button class="speakbtn" data-explain>Selitä miksi</button><div class="micres explain" data-explainres aria-live="polite"></div></div>';
+}
+function bindExplain(host, card, answer, dir) {
+  const btn = host.querySelector("[data-explain]");
+  if (!btn) return;
+  const out = host.querySelector("[data-explainres]");
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    out.className = "micres explain";
+    out.textContent = "Mietin…";
+    try {
+      out.textContent = (await ai("explain", { it: card.it, fi: card.fi, answer, dir })).text;
+      btn.remove();
+    } catch (err) {
+      out.className = "micres explain no";
+      out.textContent = err.message;
+      btn.disabled = false;
+    }
+  });
+}
+
 /* ---------- uusi sana ---------- */
 function viewIntro(card) {
   const stage = el("dStage");
@@ -334,6 +358,7 @@ function viewChoice(card, q) {
         mode: "choice",
         dir: toItalian ? "fi2it" : "it2fi",
         err: ok ? null : "sekaannus",
+        typed: options[i][field],
       });
     }),
   );
@@ -549,6 +574,10 @@ function settle(card, q, verdict, solution, info = {}) {
       const why = info.err && MISS_HINTS[info.err] ? `<span class="note">${MISS_HINTS[info.err]}</span>` : note;
       vd.innerHTML = `<span class="vt no">Oikea vastaus</span><span class="sol">${escapeHtml(solution)}</span>${why}`;
     }
+  }
+  if (vd && !ok) {
+    vd.insertAdjacentHTML("beforeend", explainButton());
+    bindExplain(vd, card, info.typed || "", info.dir || "fi2it");
   }
   if (vd && canListen) {
     vd.insertAdjacentHTML("beforeend", micButton());

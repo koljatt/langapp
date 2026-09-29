@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-Vite serves it at <http://localhost:5173> and opens a browser. `npm run build` produces a static bundle in `dist/` that you can open from disk or drop on any web host — no backend involved.
+Vite serves it at <http://localhost:5173> and opens a browser. `npm run build` produces the bundle in `dist/client/` plus the Worker. The static part still works from any web host, but the AI features need the Worker.
 
 `npm run check` validates the vocabulary data (missing fields, duplicate words inside a unit, malformed rows) — run it after editing content. `npm test` runs dependency-free unit tests over the answer-checking, mistake-classification and scheduling logic.
 
@@ -42,6 +42,23 @@ public/
   icon-*.png            manifest icons, one of them maskable
 scripts/check-data.js   data validation
 ```
+
+## AI features (optional)
+
+"Selitä miksi" on wrong answers and the **Juttele** tab (roleplay) call a small Cloudflare Worker (`worker/index.js`) that talks to Gemini. Everything else stays static and offline; these two features show a "needs a connection" message when offline.
+
+Setup:
+
+1. Create an API key in Google AI Studio and set a quota/spend limit there.
+2. Set the model in `wrangler.jsonc` → `vars.GEMINI_MODEL`.
+3. Store secrets: `npx wrangler secret put GEMINI_API_KEY` and `npx wrangler secret put APP_TOKEN` (any long random string).
+4. In the app: Tilastot → *Tekoälyn pääsykoodi* → paste the same `APP_TOKEN`.
+
+For local `npm run dev`, put `GEMINI_API_KEY=…` and `APP_TOKEN=…` in a `.dev.vars` file (git-ignored).
+
+The token is stored in the app's settings, so it is also included in exported backup files — don't share those.
+
+The Worker enforces a per-minute rate limit; the daily ceiling comes from your Google quota.
 
 ## How the scheduler works
 
