@@ -22,12 +22,13 @@ import {
   finnishForms,
   genderOf,
   isTypo,
+  judgeSpoken,
   norm,
   shuffle,
   todayKey,
 } from "../lib/text.js";
-import { hasItalianVoice, say, stopSpeaking } from "../lib/speech.js";
-import { SPEAKER } from "./icons.js";
+import { canListen, hasItalianVoice, listenOnce, say, stopSpeaking } from "../lib/speech.js";
+import { MIC, SPEAKER } from "./icons.js";
 
 const MODE_KEYS = ["choice", "type", "listen", "recall"];
 /** Osuus sessiosta, joka varataan kompastuskiville vaikka vuoro ei olisi. */
@@ -222,6 +223,49 @@ function bindSpeak(host) {
   host.querySelectorAll("[data-say]").forEach((b) => b.addEventListener("click", () => say(b.dataset.say)));
 }
 
+/**
+ * "Sano ääneen" -harjoitus: mikrofonin kuuntelema ääntäminen tarkistetaan
+ * kortin sanaa vastaan. Ei vaikuta SRS-arvosanaan — tunnistus on liian
+ * epätarkka arvosanan pohjaksi, mutta palautteena se on hyödyllinen.
+ */
+function micButton() {
+  if (!canListen) return "";
+  return `<div class="micbox"><button class="speakbtn" data-mic aria-label="Sano ääneen">${MIC(18)} Sano ääneen</button><div class="micres" data-micres aria-live="polite"></div></div>`;
+}
+function bindMic(host, card) {
+  const btn = host.querySelector("[data-mic]");
+  if (!btn) return;
+  const out = host.querySelector("[data-micres]");
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.classList.add("rec");
+    out.textContent = "Kuuntelen…";
+    out.className = "micres";
+    try {
+      const heard = await listenOnce();
+      const verdict = judgeSpoken(heard, card);
+      out.className = `micres ${verdict}`;
+      out.textContent =
+        verdict === "ok"
+          ? "Hyvä! Tuo kuulosti oikealta."
+          : verdict === "near"
+            ? `Melkein — kuulin: ${heard[0]}`
+            : `Kuulin: ${heard[0]}. Kuuntele ja yritä uudestaan.`;
+    } catch (err) {
+      out.className = "micres no";
+      out.textContent =
+        err.message === "denied"
+          ? "Mikrofonin käyttö on estetty selaimen asetuksissa."
+          : err.message === "none"
+            ? "En kuullut mitään — yritä uudestaan."
+            : "Puheentunnistus ei onnistunut.";
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("rec");
+    }
+  });
+}
+
 /* ---------- uusi sana ---------- */
 function viewIntro(card) {
   const stage = el("dStage");
@@ -231,8 +275,10 @@ function viewIntro(card) {
     <div style="font-size:1.15rem;font-weight:500">${escapeHtml(card.fi)}</div>
     ${card.note ? `<div class="verdict"><span class="note">${escapeHtml(card.note)}</span></div>` : ""}
     ${speakerButton(card.it)}
+    ${micButton()}
   </div>`;
   bindSpeak(stage);
+  bindMic(stage, card);
   el("dFoot").innerHTML = '<button class="btn" data-action="go">Jatka</button>';
   el("dFoot").querySelector("[data-action]").addEventListener("click", () => {
     introduce(app.state, card.key);
@@ -439,6 +485,10 @@ function viewRecall(card, q) {
     answered = true;
     el("sol").hidden = false;
     say(card.it);
+    if (canListen) {
+      el("sol").insertAdjacentHTML("beforeend", micButton());
+      bindMic(el("sol"), card);
+    }
     el("dFoot").innerHTML = "";
     stage.insertAdjacentHTML(
       "beforeend",
@@ -499,6 +549,10 @@ function settle(card, q, verdict, solution, info = {}) {
       const why = info.err && MISS_HINTS[info.err] ? `<span class="note">${MISS_HINTS[info.err]}</span>` : note;
       vd.innerHTML = `<span class="vt no">Oikea vastaus</span><span class="sol">${escapeHtml(solution)}</span>${why}`;
     }
+  }
+  if (vd && canListen) {
+    vd.insertAdjacentHTML("beforeend", micButton());
+    bindMic(vd, card);
   }
   const last = index + 1 >= queue.length;
   el("dFoot").innerHTML = `<button class="btn" data-action="next">${last ? "Valmis" : "Seuraava"}</button>`;

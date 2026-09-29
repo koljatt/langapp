@@ -158,6 +158,20 @@ export function classifyMiss(got, expected) {
  * näppäilyvirhe ei ole sama asia kuin unohtunut sana, ja jos se laskettaisiin
  * virheeksi, tilasto "mitä et osaa" menisi pilalle.
  */
+/**
+ * Arvioi puheentunnistuksen kuulemat vaihtoehdot kortin sanaa vastaan.
+ * "ok" = osui, "near" = yhden kirjaimen päässä, "no" = ei. Tunnistus on
+ * epätarkka (ja se kuuntelee artikkelin mukaan tai ilman), joten tämä on
+ * palaute eikä arvosana — SRS:ään tulos ei vaikuta.
+ */
+export function judgeSpoken(heard, card) {
+  const want = [...acceptedForms(card)];
+  const got = [].concat(heard).map(norm).filter(Boolean);
+  if (got.some((g) => want.includes(g) || want.includes(norm(dropArticle(g))))) return "ok";
+  if (got.some((g) => isTypo(g, want))) return "near";
+  return "no";
+}
+
 export function isTypo(got, expected) {
   const g = norm(got);
   if (!g) return false;

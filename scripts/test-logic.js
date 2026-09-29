@@ -6,7 +6,7 @@
 let failed = 0;
 import { CARDS, BY_KEY, CURRICULUM } from '../src/data/index.js';
 import { VERB_CARDS, VERB_BY_KEY, VERBS } from '../src/data/verbs.js';
-import { accentSlip, acceptedForms, classifyMiss, finnishForms, genderOf, isTypo, levenshtein, norm } from '../src/lib/text.js';
+import { accentSlip, acceptedForms, classifyMiss, finnishForms, genderOf, isTypo, judgeSpoken, levenshtein, norm } from '../src/lib/text.js';
 import { boxOf, difficulty, grade, forecast, hardKeys, isDue, isStruggling, openCount, unitStats, weakSpots, INTERVALS, KNOWN_BOX } from '../src/lib/srs.js';
 import { defaultState, merge } from '../src/lib/store.js';
 
@@ -133,6 +133,13 @@ check('jokaisella verbillä 6 persoonaa', VERBS.every(v=>v.it.length===6 && v.fi
 const gVerb = defaultState();
 grade(gVerb, 'lavorare|io', true, { mode: 'verb' });
 check('verbikortti taipuu samalla SRS:llä kuin sanasto', boxOf(gVerb, 'lavorare|io'), 1);
+
+// ääntämisen arviointi
+check('ääntäminen: artikkelilla', judgeSpoken(['il caffè'], caffe), 'ok');
+check('ääntäminen: ilman artikkelia', judgeSpoken(['caffè'], caffe), 'ok');
+check('ääntäminen: toinen vaihtoehto osuu', judgeSpoken(['cane', 'caffe'], caffe), 'ok');
+check('ääntäminen: väärä sana', judgeSpoken(['cane'], caffe), 'no');
+check('ääntäminen: lähes', judgeSpoken(['parlere'], CARDS.find(c=>c.it==='parlare')), 'near');
 
 // ennuste
 const fcState = defaultState();

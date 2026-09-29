@@ -130,3 +130,43 @@ export function say(text, rate = 0.9) {
 export function stopSpeaking() {
   if (canSpeak) speechSynthesis.cancel();
 }
+
+/* ---------- puheentunnistus ---------- */
+
+const Recognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+/** Selain tukee puheentunnistusta (Chrome, Safari; ei Firefox). */
+export const canListen = !!Recognition;
+
+/**
+ * Kuuntelee yhden italiankielisen lausuman ja palauttaa tunnistuksen
+ * vaihtoehdot parhaasta alkaen. Hylkää virheellä: "denied" (mikrofoni estetty),
+ * "none" (ei puhetta) tai muu selaimen virhekoodi.
+ */
+export function listenOnce() {
+  return new Promise((resolve, reject) => {
+    if (!Recognition) return reject(new Error("unsupported"));
+    stopSpeaking(); // ettei tunnistus kuule sovelluksen omaa ääntä
+    const rec = new Recognition();
+    rec.lang = "it-IT";
+    rec.maxAlternatives = 5;
+    rec.interimResults = false;
+    let done = false;
+    rec.onresult = (e) => {
+      done = true;
+      resolve([...e.results[0]].map((a) => a.transcript));
+    };
+    rec.onerror = (e) => {
+      done = true;
+      reject(new Error(e.error === "not-allowed" || e.error === "service-not-allowed" ? "denied" : e.error === "no-speech" ? "none" : e.error));
+    };
+    rec.onend = () => {
+      if (!done) reject(new Error("none"));
+    };
+    try {
+      rec.start();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
