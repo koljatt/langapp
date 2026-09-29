@@ -69,6 +69,23 @@ if (canSpeak) {
   window.addEventListener("pointerdown", unlockSpeech, { once: true, capture: true });
 }
 
+/**
+ * Kutsutaan käyttäjän eleen (napautus, lähetys) sisällä ennen asynkronista
+ * odotusta. iOS sallii ohjelmallisen puheen vain, jos moottori on herätetty
+ * juuri äskettäisessä eleessä — kotinäytön sovelluksessa alkuperäinen
+ * avaus ei riitä, kun vastaus saapuu vasta verkkokutsun jälkeen.
+ */
+export function primeSpeech() {
+  if (!canSpeak) return;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch {
+    /* ei haittaa */
+  }
+}
+
 /** Onko koneella lainkaan italiankielistä ääntä. */
 export const hasItalianVoice = () => canSpeak && !!voice;
 

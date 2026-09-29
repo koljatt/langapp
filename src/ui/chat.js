@@ -1,7 +1,7 @@
 import { app, el } from "../app.js";
 import { ai, SCENARIOS } from "../lib/ai.js";
 import { escapeHtml } from "../lib/text.js";
-import { canListen, hasItalianVoice, listenOnce, say } from "../lib/speech.js";
+import { canListen, hasItalianVoice, listenOnce, primeSpeech, say } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
 
 /** Nykyinen keskustelu; tyhjä = skenaarion valinta. Ei tallenneta. */
@@ -20,6 +20,7 @@ function pick() {
   el("vChat").innerHTML = h;
   el("vChat").querySelectorAll("[data-scn]").forEach((b) =>
     b.addEventListener("click", () => {
+      primeSpeech();
       scenario = b.dataset.scn;
       turns = [];
       renderChat();
@@ -61,7 +62,10 @@ function renderChat() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const v = form.m.value.trim();
-    if (v && !busy) send(v);
+    if (v && !busy) {
+      primeSpeech();
+      send(v);
+    }
   });
   const mic = host.querySelector("[data-mic]");
   if (mic) {
