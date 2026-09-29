@@ -1,6 +1,6 @@
 import "./styles.css";
 import { app, el } from "./app.js";
-import { dueKeys, streak } from "./lib/srs.js";
+import { applyFreezes, dueKeys, streak } from "./lib/srs.js";
 import { renderHome } from "./ui/home.js";
 import { renderUnit } from "./ui/unit.js";
 import { renderVerbs } from "./ui/verbs.js";
@@ -22,6 +22,7 @@ app.goto = (tab) => {
 };
 
 app.render = () => {
+  if (applyFreezes(app.state)) app.save();
   el("cStreak").textContent = streak(app.state);
   el("cDue").textContent = dueKeys(app.state).length;
   if (app.tab === "home") renderHome();

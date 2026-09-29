@@ -7,7 +7,8 @@ let failed = 0;
 import { CARDS, BY_KEY, CURRICULUM } from '../src/data/index.js';
 import { VERB_CARDS, VERB_BY_KEY, VERBS } from '../src/data/verbs.js';
 import { accentSlip, acceptedForms, classifyMiss, finnishForms, genderOf, isTypo, judgeSpoken, levenshtein, norm } from '../src/lib/text.js';
-import { boxOf, difficulty, grade, forecast, hardKeys, isDue, isStruggling, openCount, unitStats, weakSpots, INTERVALS, KNOWN_BOX } from '../src/lib/srs.js';
+import { applyFreezes, applyPlacement, boxOf, streak, FREEZE_MAX, difficulty, grade, forecast, hardKeys, isDue, isStruggling, openCount, unitStats, weakSpots, INTERVALS, KNOWN_BOX } from '../src/lib/srs.js';
+import { todayKey } from '../src/lib/text.js';
 import { defaultState, merge } from '../src/lib/store.js';
 
 const check = (name, got, want) => {
@@ -152,6 +153,40 @@ const fc = forecast(fcState, 7);
 check('ennuste: myöhässä lasketaan tälle päivälle', fc[0], 1);
 check('ennuste: huomenna', fc[1], 1);
 check('ennuste: kaukainen jää pois', fc.reduce((a,b)=>a+b,0), 2);
+
+// putkisuoja
+const dayAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return todayKey(d); };
+const fz = defaultState();
+fz.log[dayAgo(3)] = 5; fz.log[dayAgo(2)] = 5; fz.freezes = 1; // eilinen jäi väliin
+check('putki ilman suojaa katkeaa', streak(fz), 0);
+check('suoja peittää yhden päivän', applyFreezes(fz), true);
+check('suojan jälkeen putki jatkuu (yhteensä 2 päivää)', streak(fz), 2);
+check('suoja kului', fz.freezes, 0);
+const fz2 = defaultState();
+fz2.log[dayAgo(5)] = 5; fz2.freezes = 1; // kolme päivää väliin
+check('liian pitkää katkoa ei peitetä', applyFreezes(fz2), false);
+check('suoja säästyy silloin', fz2.freezes, 1);
+const fz3 = defaultState();
+fz3.log[dayAgo(4)] = 1; fz3.log[dayAgo(3)] = 1; fz3.freezes = 2; // 2 päivää väliin, 2 suojaa
+check('kaksi suojaa peittää kahden päivän katkon', applyFreezes(fz3), true);
+check('kahden päivän katko: putki jatkuu', streak(fz3), 2);
+const fz4 = defaultState();
+for (let i = 1; i <= 6; i++) fz4.log[dayAgo(i)] = 1; // 6 päivän putki, seitsemäs tänään
+grade(fz4, 'ciao|hei, moi', true);
+check('7. putkipäivä ansaitsee suojan', fz4.freezes, 1);
+fz4.freezes = FREEZE_MAX; fz4.log = {}; for (let i = 1; i <= 6; i++) fz4.log[dayAgo(i)] = 1;
+grade(fz4, 'ciao|hei, moi', true);
+check('suojia ei kerry yli maksimin', fz4.freezes, FREEZE_MAX);
+
+// tasotesti
+const pl = defaultState();
+pl.items[CURRICULUM[0].keys[0]] = { b: 1, due: 0, seen: 3, miss: 0, e: 1, h: '', lp: 0 };
+const marked = applyPlacement(pl, [0, 1]);
+check('tasotesti ei koske jo harjoiteltuun korttiin', pl.items[CURRICULUM[0].keys[0]].b, 1);
+check('tasotesti merkitsee muut kortit', marked, CURRICULUM[0].keys.length + CURRICULUM[1].keys.length - 1);
+check('tasotestin kortti on osattu', boxOf(pl, CURRICULUM[1].keys[0]), KNOWN_BOX);
+check('tasotestin kortti erääntyy pian', pl.items[CURRICULUM[1].keys[0]].due - Date.now() <= 86_400_000, true);
+check('tasotesti avaa seuraavan jakson', openCount(pl) >= 3, true);
 
 // data integrity
 check('kortit uniikkeja', new Set(CARDS.map(c=>c.key)).size, CARDS.length);

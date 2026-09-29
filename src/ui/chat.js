@@ -1,8 +1,28 @@
 import { app, el } from "../app.js";
 import { ai, SCENARIOS } from "../lib/ai.js";
-import { escapeHtml } from "../lib/text.js";
+import { BY_KEY } from "../data/index.js";
+import { escapeHtml, todayKey } from "../lib/text.js";
 import { canListen, hasItalianVoice, isListening, listenOnce, say, stopListening } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
+
+const MAX_FIXES = 40;
+
+/** Viimeksi harjoitellut sanat — keskustelu käyttää niitä, jotta harjoittelet omaa sanastoasi. */
+function recentWords(n = 10) {
+  return Object.entries(app.state.items)
+    .filter(([k]) => BY_KEY.has(k))
+    .sort((a, b) => (b[1].t || 0) - (a[1].t || 0))
+    .slice(0, n)
+    .map(([k]) => BY_KEY.get(k).it);
+}
+
+/** Tallentaa korjauksen, jotta toistuvat virheet voi analysoida (ks. patternsPanel). */
+function rememberFix(msg, fix) {
+  const list = (app.state.chatFixes = app.state.chatFixes || []);
+  list.push({ m: msg, f: fix, d: todayKey() });
+  app.state.chatFixes = list.slice(-MAX_FIXES);
+  app.save();
+}
 
 /** Nykyinen keskustelu; tyhjä = skenaarion valinta. Ei tallenneta. */
 let scenario = null;
@@ -17,7 +37,30 @@ function pick() {
     h += `<button class="unit" data-scn="${id}"><span class="idx">💬</span><span><span class="tt">${escapeHtml(title)}</span><br><span class="it">${escapeHtml(sub)}</span></span></button>`;
   }
   h += "</div>";
+  const fixes = app.state.chatFixes || [];
+  if (fixes.length >= 3) {
+    h += `<div class="panel"><span class="eyebrow">Toistuvat virheesi</span>
+      <p class="sub" style="color:var(--muted);font-size:.88rem;margin:8px 0 10px">${fixes.length} korjausta keskusteluista. Tekoäly etsii niistä toistuvat mallit.</p>
+      <button class="btn ghost" data-patterns>Analysoi virheeni</button>
+      <p class="patres" data-patres aria-live="polite"></p></div>`;
+  }
   el("vChat").innerHTML = h;
+  const pbtn = el("vChat").querySelector("[data-patterns]");
+  if (pbtn) {
+    pbtn.addEventListener("click", async () => {
+      const out = el("vChat").querySelector("[data-patres]");
+      pbtn.disabled = true;
+      out.className = "patres";
+      out.textContent = "Analysoin…";
+      try {
+        out.textContent = (await ai("patterns", { fixes: fixes.slice(-30).map(({ m, f }) => ({ m, f })) })).text;
+      } catch (err) {
+        out.className = "patres no";
+        out.textContent = err.message;
+      }
+      pbtn.disabled = false;
+    });
+  }
   el("vChat").querySelectorAll("[data-scn]").forEach((b) =>
     b.addEventListener("click", () => {
       scenario = b.dataset.scn;
@@ -114,8 +157,15 @@ async function send(text) {
   renderChat();
   if (mine) el("vChat").querySelector('input[name="m"]').value = "";
   try {
-    const r = await ai("roleplay", { scenario, messages: turns.map(({ role, text }) => ({ role, text })) });
-    if (mine && r.fix) mine.fix = r.fix;
+    const r = await ai("roleplay", {
+      scenario,
+      messages: turns.map(({ role, text }) => ({ role, text })),
+      words: recentWords(),
+    });
+    if (mine && r.fix) {
+      mine.fix = r.fix;
+      rememberFix(mine.text, r.fix);
+    }
     turns.push({ role: "model", text: r.reply, fi: r.fi });
     busy = false;
     renderChat();

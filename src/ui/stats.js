@@ -87,7 +87,7 @@ export function renderStats() {
   let h = `<div class="grid2">
     <div class="stat"><div class="v">${o.known}</div><div class="l">osattua sanaa</div></div>
     <div class="stat"><div class="v">${o.seenCards}</div><div class="l">aloitettua korttia</div></div>
-    <div class="stat"><div class="v">${streak(s)}</div><div class="l">päivän putki · ennätys ${s.best || 0}</div></div>
+    <div class="stat"><div class="v">${streak(s)}</div><div class="l">päivän putki · ennätys ${s.best || 0}${s.freezes ? ` · suojia ${s.freezes}` : ""}</div></div>
     <div class="stat"><div class="v">${o.accuracy}%</div><div class="l">oikein kaikkiaan</div></div>
   </div>`;
 

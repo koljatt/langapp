@@ -43,9 +43,15 @@ public/
 scripts/check-data.js   data validation
 ```
 
+## Streak freezes and placement test
+
+Every 7th day of a streak earns a **streak freeze** (max 2). If you miss up to as many days as you have freezes, they are spent automatically and the streak carries on; a gap longer than your freezes is not covered, so they aren't wasted. Frozen days keep the streak alive but don't add to the count.
+
+The **placement test** (home screen, shown while you have fewer than 40 cards started) asks 4 multiple-choice questions per unit from unit 1 onward — pass with 3/4, stop after 2 failed units in a row. Passed units are marked known (box 3) but come due tomorrow, so guesses get checked quickly. Cards you've already practised are left alone.
+
 ## AI features (optional)
 
-"Selitä miksi" on wrong answers and the **Juttele** tab (roleplay) call a small Cloudflare Worker (`worker/index.js`) that talks to Gemini. Everything else stays static and offline; these two features show a "needs a connection" message when offline.
+"Selitä miksi" on wrong answers and the **Juttele** tab (roleplay) call a small Cloudflare Worker (`worker/index.js`) that talks to Gemini. The roleplay uses the words you studied most recently, saves the corrections it gives, and "Analysoi virheeni" (roleplay start screen, after 3+ corrections) asks the AI to find your recurring mistake patterns. Everything else stays static and offline; these two features show a "needs a connection" message when offline.
 
 Setup:
 

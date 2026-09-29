@@ -4,7 +4,8 @@
  * jotta tätä ei voi käyttää yleiskäyttöisenä LLM-välityksenä.
  *
  *   POST /api/explain   { it, fi, answer, dir }        -> { text }
- *   POST /api/roleplay  { scenario, messages: [...] }  -> { reply, fi, fix }
+ *   POST /api/roleplay  { scenario, messages: [...], words?: [...] } -> { reply, fi, fix }
+ *   POST /api/patterns  { fixes: [{ m, f }] }          -> { text }
  *
  * Suojaus: APP_TOKEN-salaisuus (jos asetettu) vaaditaan x-app-token-otsakkeessa,
  * ja LIMITER-sidos rajoittaa kutsutahtia. Päiväkatto tulee Googlen puolelta
@@ -14,6 +15,8 @@
 
 const MAX_TEXT = 300;
 const MAX_TURNS = 20;
+const MAX_WORDS = 12;
+const MAX_FIXES = 30;
 
 const SCENARIOS = {
   caffe: "Olet barista italialaisessa kahvilassa. Asiakas (opiskelija) tilaa juotavaa ja syötävää.",
@@ -28,7 +31,16 @@ Opiskelija vastasi väärin sanaharjoituksessa. Selitä suomeksi enintään 3 ly
 miksi oikea vastaus on se mikä on ja mikä vastauksessa meni pieleen. Jos sopii, anna yksi
 muistisääntö tai lyhyt esimerkkilause italiaksi suomennoksineen. Ei otsikoita, ei listoja.`;
 
-const roleplaySystem = (scene) => `${scene}
+const PATTERNS_SYSTEM = `Olet italian opettaja. Saat listan suomalaisen A1-tason opiskelijan viesteistä, joissa oli virhe,
+sekä korjauksista. Tunnista 2–3 toistuvaa virhemallia (esim. artikkelit, verbin taivutus, sanajärjestys, sanavalinta).
+Selitä jokainen suomeksi yhdellä lauseella ja anna yksi esimerkki italiaksi. Jos virheet eivät toistu, sano se ja
+kehu. Älä käytä otsikoita. Vastaa enintään 120 sanalla.`;
+
+const roleplaySystem = (scene, words) => `${scene}${
+  words.length
+    ? `\nOpiskelija on äskettäin opetellut nämä sanat: ${words.join(", ")}. Käytä niitä luontevasti keskustelussa kun ne sopivat, mutta älä pakota.`
+    : ""
+}
 Opiskelija on suomalainen italian alkeiskurssilaisen (CEFR A1). Puhu yksinkertaista italiaa:
 lyhyet lauseet, perussanasto, nykyhetki. Pidä keskustelu käynnissä kysymällä yksi asia kerrallaan.
 Vastaa AINA JSON-oliolla: {"reply": "vastauksesi italiaksi (1-2 lyhyttä lausetta)",
@@ -81,13 +93,22 @@ async function roleplay(env, b) {
   if (!contents.length || contents[0].role !== "user") {
     contents.unshift({ role: "user", parts: [{ text: "(aloita keskustelu tervehtimällä)" }] });
   }
-  const raw = await gemini(env, roleplaySystem(scene), contents, { json: true, maxTokens: 1024 });
+  const words = (Array.isArray(b.words) ? b.words : []).slice(0, MAX_WORDS).map((w) => clean(w).slice(0, 40)).filter(Boolean);
+  const raw = await gemini(env, roleplaySystem(scene, words), contents, { json: true, maxTokens: 1024 });
   try {
     const o = JSON.parse(raw);
     return { reply: clean(o.reply), fi: clean(o.fi), fix: clean(o.fix) };
   } catch {
     return { reply: raw.slice(0, MAX_TEXT), fi: "", fix: "" };
   }
+}
+
+async function patterns(env, b) {
+  const fixes = (Array.isArray(b.fixes) ? b.fixes : []).slice(-MAX_FIXES);
+  if (fixes.length < 3) throw new HttpError(400, "too few");
+  const prompt = fixes.map((x, i) => `${i + 1}. Viesti: ${clean(x.m)}\n   Korjaus: ${clean(x.f)}`).join("\n");
+  const text = await gemini(env, PATTERNS_SYSTEM, [{ role: "user", parts: [{ text: prompt }] }], { maxTokens: 1024 });
+  return { text };
 }
 
 class HttpError extends Error {
@@ -116,6 +137,7 @@ export default {
       const body = await request.json();
       if (pathname === "/api/explain") return json(await explain(env, body));
       if (pathname === "/api/roleplay") return json(await roleplay(env, body));
+      if (pathname === "/api/patterns") return json(await patterns(env, body));
       return json({ error: "not_found" }, 404);
     } catch (err) {
       if (err instanceof HttpError) return json({ error: err.message }, err.status);

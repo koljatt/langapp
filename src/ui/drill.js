@@ -199,7 +199,7 @@ const hintFor = (card, always) =>
  * Toinen puoli kortista on tarkistettava myös: "scusa" ja "scusi" ovat eri
  * italiaa mutta samaa suomea, eikä kysymyksellä saa olla kahta oikeaa.
  */
-function distractors(card, field, n) {
+export function distractors(card, field, n) {
   const other = field === "it" ? "fi" : "it";
   const same = norm(card[other]);
   const ok = (x) => x && x.key !== card.key && norm(x[other]) !== same;

@@ -102,10 +102,14 @@ export function grade(state, key, correct, info = {}) {
   if (near) bump(state, "errs", "lipsahdus", null);
 
   const day = todayKey();
+  applyFreezes(state);
+  const first = !state.log[day];
   state.log[day] = (state.log[day] || 0) + 1;
 
   const s = streak(state);
   if (s > (state.best || 0)) state.best = s;
+  // Joka FREEZE_EVERY. putkipäivä ansaitsee suojan (vain päivän ensimmäisestä vastauksesta).
+  if (first && s > 0 && s % FREEZE_EVERY === 0) state.freezes = Math.min(FREEZE_MAX, (state.freezes || 0) + 1);
   return r;
 }
 
@@ -114,14 +118,66 @@ export function introduce(state, key) {
   state.items[key] = { ...blank(), due: Date.now(), t: Date.now() };
 }
 
-/** Peräkkäisten harjoittelupäivien määrä. */
+export const FREEZE_MAX = 2; // suojia voi säästää enintään näin monta
+export const FREEZE_EVERY = 7; // uusi suoja aina 7. putkipäivänä
+
+/** Päivä on "aktiivinen" jos sinä päivänä harjoiteltiin tai suoja peitti sen. */
+const active = (state, d) => {
+  const k = todayKey(d);
+  return !!(state.log[k] || (state.frozen && state.frozen[k]));
+};
+
+/** Peräkkäisten harjoittelupäivien määrä (suojatut päivät eivät katkaise putkea). */
 export function streak(state) {
   const d = new Date();
-  if (!state.log[todayKey(d)]) d.setDate(d.getDate() - 1);
+  if (!active(state, d)) d.setDate(d.getDate() - 1);
   let n = 0;
-  while (state.log[todayKey(d)]) {
-    n++;
+  while (active(state, d)) {
+    if (state.log[todayKey(d)]) n++; // suojattu päivä ei kasvata lukua, mutta ei katkaise
     d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+/**
+ * Käyttää suojia väliin jääneiden päivien peittämiseen: jos edelliset k
+ * päivää (k ≤ suojat) jäivät väliin ja niitä ennen harjoiteltiin, ne
+ * merkitään suojatuiksi ja putki jatkuu. Liian pitkää katkoa ei peitetä —
+ * silloin suojat säästyvät. Palauttaa true jos tila muuttui.
+ */
+export function applyFreezes(state, now = new Date()) {
+  const have = state.freezes || 0;
+  if (have < 1) return false;
+  const d = new Date(now);
+  d.setDate(d.getDate() - 1);
+  if (active(state, d)) return false;
+  const gap = [];
+  while (gap.length <= have && !active(state, d)) {
+    gap.push(todayKey(d));
+    d.setDate(d.getDate() - 1);
+  }
+  // Katko on peitettävissä vain jos se mahtuu suojiin ja sitä ennen oli putki.
+  if (gap.length > have || !active(state, d) || !state.log[todayKey(d)]) return false;
+  state.frozen = state.frozen || {};
+  for (const k of gap) state.frozen[k] = 1;
+  state.freezes = have - gap.length;
+  return true;
+}
+
+/**
+ * Tasotestin tulos: annettujen jaksojen vielä näkemättömät kortit merkitään
+ * osatuiksi (laatikko KNOWN_BOX), mutta ne erääntyvät jo huomenna, jotta
+ * arvaus tai onnenkantamoinen tarkistuu pian. Jo harjoiteltuihin kortteihin
+ * ei kosketa. Palauttaa merkittyjen korttien määrän.
+ */
+export function applyPlacement(state, unitIndexes) {
+  let n = 0;
+  for (const i of unitIndexes) {
+    for (const key of CURRICULUM[i].keys) {
+      if (state.items[key]) continue;
+      state.items[key] = { ...blank(), b: KNOWN_BOX, due: Date.now() + DAY, seen: 1, t: Date.now() };
+      n++;
+    }
   }
   return n;
 }

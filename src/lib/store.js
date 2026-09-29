@@ -11,6 +11,11 @@ export const defaultState = () => ({
   /** Missä kompastelee: harjoitustavoittain, suunnittain ja virhelajeittain. */
   stats: { modes: {}, dirs: {}, errs: {} },
   best: 0,
+  /** Putkisuojat: käytettävissä oleva määrä ja suojatut päivät ("2026-09-01" -> 1). */
+  freezes: 0,
+  frozen: {},
+  /** Tekoälykeskustelun korjaukset mallien tunnistamista varten: { m: viesti, f: korjaus, d: päivä } */
+  chatFixes: [],
   settings: { choice: 1, type: 1, listen: 1, recall: 1, goal: 25, hard: 1, voiceName: "" },
   t: 0,
 });
@@ -97,6 +102,12 @@ export function merge(a, b) {
     out.log[d] = Math.max(out.log[d] || 0, n);
   }
   out.best = Math.max(a.best || 0, b.best || 0);
+  out.frozen = { ...(a.frozen || {}), ...(b.frozen || {}) };
+  out.freezes = (b.t || 0) > (a.t || 0) ? b.freezes || 0 : a.freezes || 0;
+  const seen = new Set();
+  out.chatFixes = [...(a.chatFixes || []), ...(b.chatFixes || [])]
+    .filter((x) => !seen.has(x.d + x.m) && seen.add(x.d + x.m))
+    .slice(-40);
   if ((b.t || 0) > (a.t || 0)) out.settings = { ...a.settings, ...b.settings };
   out.t = Math.max(a.t || 0, b.t || 0);
   return out;

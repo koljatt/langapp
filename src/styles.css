@@ -373,3 +373,6 @@ select:focus{outline:none; border-color:var(--accent)}
 .chatbtns .speakbtn{margin:0; flex:none}
 .chatbtns .btn{flex:1}
 .speakbtn.small{padding:6px 10px; font-size:.82rem; margin-top:8px}
+.patres{margin-top:12px; font-size:.92rem; line-height:1.5; white-space:pre-wrap; user-select:text; -webkit-user-select:text}
+.patres.no{color:var(--bad)}
+.patres:empty{display:none}

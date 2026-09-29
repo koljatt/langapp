@@ -4,6 +4,11 @@ import { boxOf, dueKeys, hardKeys, isNew, openCount, streak, unitStats, KNOWN_BO
 import { escapeHtml, todayKey } from "../lib/text.js";
 import { ring, LOCK } from "./icons.js";
 import { startSession } from "./drill.js";
+import { startPlacement } from "./placement.js";
+import { FREEZE_MAX } from "../lib/srs.js";
+
+/** "· suojia 1/2" putken perään kun suojia on tai putki on käynnissä. */
+const freezeNote = (s) => (s.freezes ? ` · suojia ${s.freezes}/${FREEZE_MAX}` : "");
 
 export function renderHome() {
   const s = app.state;
@@ -21,18 +26,18 @@ export function renderHome() {
   if (due > 0) {
     h += `<div><span class="eyebrow">Päivän kertaus</span><h2>${due} korttia odottaa</h2></div>`;
     h += `<div class="meter"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>`;
-    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää</div>`;
+    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää${freezeNote(s)}</div>`;
     h += '<button class="btn" data-action="review">Aloita kertaus</button>';
   } else if (newAvailable > 0) {
     h += '<div><span class="eyebrow">Kaikki kerrattu</span><h2>Aika uusille sanoille</h2></div>';
     h += `<p class="sub">Avoimissa jaksoissa on ${newAvailable} sanaa, joita et ole vielä nähnyt.</p>`;
     h += `<div class="meter${doneToday >= goal ? " ok" : ""}"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>`;
-    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää</div>`;
+    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää${freezeNote(s)}</div>`;
     h += '<button class="btn" data-action="review">Opettele uutta</button>';
   } else {
     h += '<div><span class="eyebrow">Valmista</span><h2>Ei kerrattavaa juuri nyt</h2></div>';
     h += `<div class="meter ok"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>`;
-    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää</div>`;
+    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää${freezeNote(s)}</div>`;
     h += '<p class="sub">Palaa huomenna, tai avaa jakso alta ja harjoittele vapaasti.</p>';
     h += '<button class="btn ghost" data-action="force">Harjoittele silti</button>';
   }
@@ -52,6 +57,13 @@ export function renderHome() {
       </div>
       <button class="btn ghost" data-action="hard">Treenaa nämä</button>
     </div>`;
+  }
+
+  // Uudelle käyttäjälle: ohita jo osaamasi.
+  if (Object.keys(s.items).length < 40) {
+    h += `<div class="focus"><div><span class="eyebrow">Osaatko jo italiaa?</span>
+      <p class="sub">Tee lyhyt tasotesti ja ohita jaksot, jotka hallitset.</p></div>
+      <button class="btn ghost" data-action="placement">Tasotesti</button></div>`;
   }
 
   h += `<div class="grid2">
@@ -95,6 +107,8 @@ export function renderHome() {
   if (review) review.addEventListener("click", () => startSession(null));
   const force = host.querySelector('[data-action="force"]');
   if (force) force.addEventListener("click", () => startSession(null, { force: true }));
+  const placement = host.querySelector('[data-action="placement"]');
+  if (placement) placement.addEventListener("click", startPlacement);
   const focus = host.querySelector('[data-action="hard"]');
   if (focus) focus.addEventListener("click", () => startSession(null, { focus: "hard" }));
 }
