@@ -1,7 +1,7 @@
 import { app, el } from "../app.js";
 import { ai, SCENARIOS } from "../lib/ai.js";
 import { escapeHtml } from "../lib/text.js";
-import { canListen, hasItalianVoice, listenOnce, primeSpeech, say } from "../lib/speech.js";
+import { canListen, hasItalianVoice, listenOnce, say } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
 
 /** Nykyinen keskustelu; tyhjä = skenaarion valinta. Ei tallenneta. */
@@ -20,7 +20,6 @@ function pick() {
   el("vChat").innerHTML = h;
   el("vChat").querySelectorAll("[data-scn]").forEach((b) =>
     b.addEventListener("click", () => {
-      primeSpeech();
       scenario = b.dataset.scn;
       turns = [];
       renderChat();
@@ -33,13 +32,18 @@ function bubble(t) {
   if (t.role === "user") {
     return `<div class="bub me">${escapeHtml(t.text)}${t.fix ? `<div class="fix">${escapeHtml(t.fix)}</div>` : ""}</div>`;
   }
-  const spk = hasItalianVoice() ? `<button class="spk" data-say="${escapeHtml(t.text)}" aria-label="Kuuntele">${SPEAKER(16)}</button>` : "";
-  return `<div class="bub them"><div>${escapeHtml(t.text)} ${spk}</div>${t.fi ? `<div class="fi" hidden>${escapeHtml(t.fi)}</div><button class="tr" data-tr>Näytä suomeksi</button>` : ""}</div>`;
+  const spk = hasItalianVoice()
+    ? `<button class="speakbtn small" data-say="${escapeHtml(t.text)}" aria-label="Kuuntele">${SPEAKER(16)} Kuuntele</button>`
+    : "";
+  return `<div class="bub them"><div>${escapeHtml(t.text)}</div>${spk}${t.fi ? `<div class="fi" hidden>${escapeHtml(t.fi)}</div><button class="tr" data-tr>Näytä suomeksi</button>` : ""}</div>`;
 }
 
 function renderChat() {
   const title = SCENARIOS.find((s) => s[0] === scenario)?.[1] || "";
   let h = `<div class="chathead"><button class="back" data-back>&larr; Skenaariot</button><span class="eyebrow">${escapeHtml(title)}</span></div>`;
+  if (!hasItalianVoice()) {
+    h += '<p class="sub" style="color:var(--muted);font-size:.85rem">Italiankielistä ääntä ei löytynyt, joten ääntä ei kuulu. iPhonessa: Asetukset → Helppokäyttöisyys → Puhuttu sisältö → Äänet → Italia.</p>';
+  }
   h += `<div class="chatlog">${turns.map(bubble).join("")}${busy ? '<div class="bub them dim">…</div>' : ""}</div>`;
   h += `<form class="chatin"><input class="typed" name="m" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="Kirjoita italiaksi…" ${busy ? "disabled" : ""}>
     ${canListen ? `<button type="button" class="spk" data-mic aria-label="Sano ääneen">${MIC(18)}</button>` : ""}
@@ -62,10 +66,7 @@ function renderChat() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const v = form.m.value.trim();
-    if (v && !busy) {
-      primeSpeech();
-      send(v);
-    }
+    if (v && !busy) send(v);
   });
   const mic = host.querySelector("[data-mic]");
   if (mic) {
@@ -93,7 +94,6 @@ async function send(text) {
     const r = await ai("roleplay", { scenario, messages: turns.map(({ role, text }) => ({ role, text })) });
     if (mine && r.fix) mine.fix = r.fix;
     turns.push({ role: "model", text: r.reply, fi: r.fi });
-    if (hasItalianVoice()) say(r.reply);
     busy = false;
     renderChat();
   } catch (err) {
