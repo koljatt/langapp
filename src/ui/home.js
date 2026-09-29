@@ -26,9 +26,13 @@ export function renderHome() {
   } else if (newAvailable > 0) {
     h += '<div><span class="eyebrow">Kaikki kerrattu</span><h2>Aika uusille sanoille</h2></div>';
     h += `<p class="sub">Avoimissa jaksoissa on ${newAvailable} sanaa, joita et ole vielä nähnyt.</p>`;
+    h += `<div class="meter${doneToday >= goal ? " ok" : ""}"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>`;
+    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää</div>`;
     h += '<button class="btn" data-action="review">Opettele uutta</button>';
   } else {
     h += '<div><span class="eyebrow">Valmista</span><h2>Ei kerrattavaa juuri nyt</h2></div>';
+    h += `<div class="meter ok"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>`;
+    h += `<div class="sub num">${doneToday} / ${goal} tänään · putki ${streak(s)} päivää</div>`;
     h += '<p class="sub">Palaa huomenna, tai avaa jakso alta ja harjoittele vapaasti.</p>';
     h += '<button class="btn ghost" data-action="force">Harjoittele silti</button>';
   }

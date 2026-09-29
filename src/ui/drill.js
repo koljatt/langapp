@@ -9,6 +9,7 @@ import {
   introduce,
   isNew,
   isStruggling,
+  KNOWN_BOX,
   openCount,
   streak,
 } from "../lib/srs.js";
@@ -23,6 +24,7 @@ import {
   isTypo,
   norm,
   shuffle,
+  todayKey,
 } from "../lib/text.js";
 import { hasItalianVoice, say, stopSpeaking } from "../lib/speech.js";
 import { SPEAKER } from "./icons.js";
@@ -47,6 +49,10 @@ let answered = false;
 let right = 0;
 let total = 0;
 let missed = [];
+/** Session tulokset yhteenvetoa varten. */
+let learned = 0; // uudet sanat joita harjoiteltiin
+let promoted = 0; // kortit jotka nousivat osattujen joukkoon
+let startedAt = 0;
 let flip = null;
 /** finish()-näytön "Vielä lisää" käynnistää saman tyyppisen session uudelleen. */
 let restartSession = () => startSession(null);
@@ -129,6 +135,9 @@ export function startSession(unitIndex = null, opts = {}) {
   right = 0;
   total = 0;
   missed = [];
+  learned = 0;
+  promoted = 0;
+  startedAt = Date.now();
   restartSession = () => startSession(unitIndex, opts);
   el("drill").classList.add("on");
   document.body.style.overflow = "hidden";
@@ -227,6 +236,7 @@ function viewIntro(card) {
   el("dFoot").innerHTML = '<button class="btn" data-action="go">Jatka</button>';
   el("dFoot").querySelector("[data-action]").addEventListener("click", () => {
     introduce(app.state, card.key);
+    learned++;
     app.save();
     const on = enabledModes();
     // Sanelu ei sovi juuri esitellylle sanalle: se vaatii kirjoitustaidon, jota ei vielä ole.
@@ -465,7 +475,9 @@ function viewRecall(card, q) {
 function settle(card, q, verdict, solution, info = {}) {
   const ok = verdict === true;
   const near = verdict === "near";
+  const before = boxOf(app.state, card.key);
   grade(app.state, card.key, verdict, info);
+  if (before < KNOWN_BOX && boxOf(app.state, card.key) >= KNOWN_BOX) promoted++;
   app.save();
   total++;
   if (ok) right++;
@@ -500,6 +512,11 @@ function finish() {
   const pct = total ? Math.round((right / total) * 100) : 0;
   const msg = pct >= 90 ? "Perfetto." : pct >= 70 ? "Bene." : pct >= 50 ? "Jatka samaan malliin." : "Toisto tekee mestarin.";
 
+  const doneToday = app.state.log[todayKey()] || 0;
+  const goal = app.state.settings.goal;
+  const goalMet = doneToday >= goal;
+  const mins = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+
   const uniq = [...new Map(missed.map((c) => [c.key, c])).values()].slice(0, 6);
   const recap = uniq.length
     ? `<div class="panel" style="text-align:left"><span class="eyebrow">Nämä jäivät kaivelemaan</span>
@@ -517,6 +534,12 @@ function finish() {
     <div class="grid2" style="margin-top:6px">
       <div class="stat"><div class="v">${right}/${total}</div><div class="l">oikein</div></div>
       <div class="stat"><div class="v">${streak(app.state)}</div><div class="l">päivän putki</div></div>
+      <div class="stat"><div class="v">${learned}</div><div class="l">uutta sanaa</div></div>
+      <div class="stat"><div class="v">${promoted}</div><div class="l">siirtyi osattuihin</div></div>
+    </div>
+    <div class="goalline">
+      <div class="meter${goalMet ? " ok" : ""}"><span style="width:${Math.min(100, (doneToday / goal) * 100)}%"></span></div>
+      <div class="sub num">${goalMet ? "Päivätavoite täynnä" : "Päivätavoite"} · ${doneToday} / ${goal} tänään · ${mins} min</div>
     </div>
   </div>${recap}`;
   el("dCount").textContent = `${total}/${total}`;
@@ -652,6 +675,9 @@ export function startVerbSession(inf = null) {
   right = 0;
   total = 0;
   missed = [];
+  learned = 0;
+  promoted = 0;
+  startedAt = Date.now();
   restartSession = () => startVerbSession(inf);
   el("drill").classList.add("on");
   document.body.style.overflow = "hidden";
@@ -685,6 +711,7 @@ function viewVerbIntro(card, q) {
   el("dFoot").innerHTML = '<button class="btn" data-action="go">Jatka</button>';
   el("dFoot").querySelector("[data-action]").addEventListener("click", () => {
     introduce(app.state, card.key);
+    learned++;
     app.save();
     queue[index].mode = "verbType";
     verbStep();
@@ -782,6 +809,9 @@ export function startGenderSession(unitIndex = null) {
   right = 0;
   total = 0;
   missed = [];
+  learned = 0;
+  promoted = 0;
+  startedAt = Date.now();
   restartSession = () => startGenderSession(unitIndex);
   el("drill").classList.add("on");
   document.body.style.overflow = "hidden";

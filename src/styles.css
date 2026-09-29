@@ -345,3 +345,10 @@ select{
   font-size:16px; touch-action:manipulation;
 }
 select:focus{outline:none; border-color:var(--accent)}
+
+.bars.fc{gap:6px; padding-top:14px}
+.bars.fc div b{position:absolute; top:-15px; left:0; right:0; text-align:center; font:500 .68rem "IBM Plex Mono",monospace; color:var(--muted); font-variant-numeric:tabular-nums}
+.legend.fc{display:flex; gap:6px}
+.legend.fc span{flex:1; text-align:center}
+.goalline{margin-top:14px; display:grid; gap:6px; text-align:left}
+.goalline .sub{color:var(--muted); font-size:.85rem}

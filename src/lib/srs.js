@@ -217,6 +217,22 @@ export function dueKeys(state, pool) {
 }
 
 /**
+ * Kertausennuste: montako korttia erääntyy kunakin lähipäivänä.
+ * Indeksi 0 on tänään (myöhässä olevat mukaan luettuina), 1 huomenna jne.
+ * Näkee etukäteen, tuleeko viikosta raskas.
+ */
+export function forecast(state, days = 7) {
+  const out = new Array(days).fill(0);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  for (const r of Object.values(state.items)) {
+    const d = Math.floor((r.due - start.getTime()) / DAY);
+    if (d < days) out[Math.max(0, d)]++;
+  }
+  return out;
+}
+
+/**
  * Montako jaksoa on auki. Jakso 1 aina; seuraava aukeaa kun edellisestä
  * on osattu UNLOCK_RATIO. Estää sen, että 671 sanaa kaatuu kerralla niskaan.
  */

@@ -7,7 +7,7 @@ let failed = 0;
 import { CARDS, BY_KEY, CURRICULUM } from '../src/data/index.js';
 import { VERB_CARDS, VERB_BY_KEY, VERBS } from '../src/data/verbs.js';
 import { accentSlip, acceptedForms, classifyMiss, finnishForms, genderOf, isTypo, levenshtein, norm } from '../src/lib/text.js';
-import { boxOf, difficulty, grade, hardKeys, isDue, isStruggling, openCount, unitStats, weakSpots, INTERVALS, KNOWN_BOX } from '../src/lib/srs.js';
+import { boxOf, difficulty, grade, forecast, hardKeys, isDue, isStruggling, openCount, unitStats, weakSpots, INTERVALS, KNOWN_BOX } from '../src/lib/srs.js';
 import { defaultState, merge } from '../src/lib/store.js';
 
 const check = (name, got, want) => {
@@ -133,6 +133,18 @@ check('jokaisella verbillä 6 persoonaa', VERBS.every(v=>v.it.length===6 && v.fi
 const gVerb = defaultState();
 grade(gVerb, 'lavorare|io', true, { mode: 'verb' });
 check('verbikortti taipuu samalla SRS:llä kuin sanasto', boxOf(gVerb, 'lavorare|io'), 1);
+
+// ennuste
+const fcState = defaultState();
+const fcNow = Date.now();
+const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+fcState.items.a = { b:1, due: fcNow - 3*86_400_000 };
+fcState.items.b = { b:1, due: startOfDay.getTime() + 86_400_000 + 3_600_000 };
+fcState.items.c = { b:1, due: startOfDay.getTime() + 20*86_400_000 };
+const fc = forecast(fcState, 7);
+check('ennuste: myöhässä lasketaan tälle päivälle', fc[0], 1);
+check('ennuste: huomenna', fc[1], 1);
+check('ennuste: kaukainen jää pois', fc.reduce((a,b)=>a+b,0), 2);
 
 // data integrity
 check('kortit uniikkeja', new Set(CARDS.map(c=>c.key)).size, CARDS.length);

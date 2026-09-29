@@ -1,6 +1,6 @@
 import { app, el } from "../app.js";
 import { BY_KEY } from "../data/index.js";
-import { difficulty, overview, streak, weakSpots, INTERVALS, KNOWN_BOX } from "../lib/srs.js";
+import { difficulty, forecast, overview, streak, weakSpots, INTERVALS, KNOWN_BOX } from "../lib/srs.js";
 import { escapeHtml, todayKey, MISS_LABELS } from "../lib/text.js";
 import { canSpeak, hasItalianVoice, listItalianVoices, onVoicesArrive, refreshVoice, say } from "../lib/speech.js";
 import { startSession } from "./drill.js";
@@ -105,6 +105,14 @@ export function renderStats() {
       return `<div class="${n ? "has" : ""}" style="height:${Math.max(3, (n / max) * 64)}px" title="${d}: ${n}"></div>`;
     })
     .join("")}</div><div class="legend"><span>${days[0].slice(5)}</span><span>tänään</span></div></div>`;
+
+  // seuraavan viikon kertausennuste
+  const fc = forecast(s, 7);
+  const fmax = Math.max(1, ...fc);
+  const dayName = (i) => (i === 0 ? "tänään" : i === 1 ? "huomenna" : ["su", "ma", "ti", "ke", "to", "pe", "la"][new Date(Date.now() + i * 86_400_000).getDay()]);
+  h += `<div class="panel"><span class="eyebrow">Tulevat kertaukset</span><div class="bars fc" style="margin-top:12px">${fc
+    .map((n, i) => `<div class="${n ? "has" : ""}" style="height:${Math.max(3, (n / fmax) * 64)}px" title="${dayName(i)}: ${n}"><b>${n || ""}</b></div>`)
+    .join("")}</div><div class="legend fc">${fc.map((_, i) => `<span>${dayName(i)}</span>`).join("")}</div></div>`;
 
   h += weakPanel(s);
 
