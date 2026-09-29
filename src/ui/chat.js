@@ -1,7 +1,7 @@
 import { app, el } from "../app.js";
 import { ai, SCENARIOS } from "../lib/ai.js";
 import { escapeHtml } from "../lib/text.js";
-import { canListen, hasItalianVoice, listenOnce, say } from "../lib/speech.js";
+import { canListen, hasItalianVoice, isListening, listenOnce, say, stopListening } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
 
 /** Nykyinen keskustelu; tyhjä = skenaarion valinta. Ei tallenneta. */
@@ -45,13 +45,22 @@ function renderChat() {
     h += '<p class="sub" style="color:var(--muted);font-size:.85rem">Italiankielistä ääntä ei löytynyt, joten ääntä ei kuulu. iPhonessa: Asetukset → Helppokäyttöisyys → Puhuttu sisältö → Äänet → Italia.</p>';
   }
   h += `<div class="chatlog">${turns.map(bubble).join("")}${busy ? '<div class="bub them dim">…</div>' : ""}</div>`;
-  h += `<form class="chatin"><input class="typed" name="m" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="Kirjoita italiaksi…" ${busy ? "disabled" : ""}>
-    ${canListen ? `<button type="button" class="spk" data-mic aria-label="Sano ääneen">${MIC(18)}</button>` : ""}
-    <button class="btn" ${busy ? "disabled" : ""}>Lähetä</button></form><div class="micres" data-err aria-live="polite"></div>`;
+  // Kenttää ei koskaan poisteta käytöstä: iOS piirtää disabled-kentän lähes
+  // näkymättömäksi, ja kirjoittaa voi jo sillä aikaa kun vastausta odotetaan.
+  h += `<form class="chatin">
+    <input class="typed" type="text" name="m" enterkeyhint="send" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" placeholder="Kirjoita italiaksi…">
+    <div class="chatbtns">
+      ${canListen ? `<button type="button" class="speakbtn" data-mic aria-label="Sano ääneen">${MIC(18)} <span>Puhu</span></button>` : ""}
+      <button class="btn">${busy ? "Odotetaan…" : "Lähetä"}</button>
+    </div>
+  </form><div class="micres" data-err aria-live="polite"></div>`;
   const host = el("vChat");
+  const draft = host.querySelector('input[name="m"]')?.value || "";
   host.innerHTML = h;
+  host.querySelector('input[name="m"]').value = draft;
 
   host.querySelector("[data-back]").addEventListener("click", () => {
+    stopListening();
     scenario = null;
     pick();
   });
@@ -66,18 +75,31 @@ function renderChat() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const v = form.m.value.trim();
-    if (v && !busy) send(v);
+    const err = host.querySelector("[data-err]");
+    if (busy) {
+      err.className = "micres";
+      err.textContent = "Odota vastausta ennen seuraavaa viestiä.";
+    } else if (!v) {
+      form.m.focus();
+    } else {
+      send(v);
+    }
   });
   const mic = host.querySelector("[data-mic]");
   if (mic) {
+    const label = mic.querySelector("span");
     mic.addEventListener("click", async () => {
+      // Toinen napautus lopettaa kuuntelun.
+      if (isListening()) return stopListening();
       mic.classList.add("rec");
+      label.textContent = "Lopeta";
       try {
         form.m.value = (await listenOnce())[0];
       } catch {
         /* ei puhetta — ei haittaa */
       }
       mic.classList.remove("rec");
+      label.textContent = "Puhu";
     });
   }
   const log = host.querySelector(".chatlog");
@@ -90,6 +112,7 @@ async function send(text) {
   if (mine) turns.push(mine);
   busy = true;
   renderChat();
+  if (mine) el("vChat").querySelector('input[name="m"]').value = "";
   try {
     const r = await ai("roleplay", { scenario, messages: turns.map(({ role, text }) => ({ role, text })) });
     if (mine && r.fix) mine.fix = r.fix;

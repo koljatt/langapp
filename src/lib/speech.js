@@ -152,38 +152,91 @@ export function stopSpeaking() {
 
 const Recognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-/** Selain tukee puheentunnistusta (Chrome, Safari; ei Firefox). */
-export const canListen = !!Recognition;
+/**
+ * iOS:n kotinäytöltä avattu sovellus tarjoaa SpeechRecognition-olion, mutta
+ * tunnistus jää käynnistyttyään usein jumiin: mikrofoni pysyy päällä eikä
+ * tulosta tai lopetusta koskaan tule. Siellä mikrofoni piilotetaan.
+ */
+const iosStandalone = typeof navigator !== "undefined" && navigator.standalone === true;
+
+/** Selain tukee puheentunnistusta (Chrome, Safari-selain; ei Firefox eikä iOS-kotinäyttö). */
+export const canListen = !!Recognition && !iosStandalone;
+
+let current = null;
+
+/** Lopettaa käynnissä olevan kuuntelun; kuultu tulos (jos mitään) palautuu normaalisti. */
+export function stopListening() {
+  if (current) {
+    try {
+      current.stop();
+    } catch {
+      /* jo pysähtynyt */
+    }
+  }
+}
+
+export const isListening = () => !!current;
 
 /**
  * Kuuntelee yhden italiankielisen lausuman ja palauttaa tunnistuksen
  * vaihtoehdot parhaasta alkaen. Hylkää virheellä: "denied" (mikrofoni estetty),
- * "none" (ei puhetta) tai muu selaimen virhekoodi.
+ * "none" (ei puhetta) tai muu selaimen virhekoodi. Pysähtyy itsestään
+ * `timeout` millisekunnin jälkeen, ettei mikrofoni jää päälle.
  */
-export function listenOnce() {
+export function listenOnce({ timeout = 8000 } = {}) {
   return new Promise((resolve, reject) => {
     if (!Recognition) return reject(new Error("unsupported"));
+    stopListening();
     stopSpeaking(); // ettei tunnistus kuule sovelluksen omaa ääntä
     const rec = new Recognition();
     rec.lang = "it-IT";
     rec.maxAlternatives = 5;
     rec.interimResults = false;
+    rec.continuous = false;
     let done = false;
-    rec.onresult = (e) => {
+    const finish = (fn) => {
+      if (done) return;
       done = true;
-      resolve([...e.results[0]].map((a) => a.transcript));
+      clearTimeout(timer);
+      clearTimeout(hard);
+      if (current === rec) current = null;
+      fn();
     };
-    rec.onerror = (e) => {
-      done = true;
-      reject(new Error(e.error === "not-allowed" || e.error === "service-not-allowed" ? "denied" : e.error === "no-speech" ? "none" : e.error));
-    };
-    rec.onend = () => {
-      if (!done) reject(new Error("none"));
-    };
+    // Ensin pyydetään siisti lopetus; jos selain ei silti lopeta, pakotetaan.
+    const timer = setTimeout(() => {
+      try {
+        rec.stop();
+      } catch {
+        /* ei haittaa */
+      }
+    }, timeout);
+    const hard = setTimeout(() => {
+      try {
+        rec.abort();
+      } catch {
+        /* ei haittaa */
+      }
+      finish(() => reject(new Error("none")));
+    }, timeout + 2000);
+    rec.onresult = (e) => finish(() => resolve([...e.results[0]].map((a) => a.transcript)));
+    rec.onerror = (e) =>
+      finish(() =>
+        reject(
+          new Error(
+            e.error === "not-allowed" || e.error === "service-not-allowed"
+              ? "denied"
+              : e.error === "no-speech" || e.error === "aborted"
+                ? "none"
+                : e.error,
+          ),
+        ),
+      );
+    rec.onend = () => finish(() => reject(new Error("none")));
     try {
+      current = rec;
       rec.start();
     } catch (err) {
-      reject(err);
+      finish(() => reject(err));
     }
   });
 }

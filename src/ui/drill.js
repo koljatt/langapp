@@ -28,7 +28,7 @@ import {
   todayKey,
 } from "../lib/text.js";
 import { ai } from "../lib/ai.js";
-import { canListen, hasItalianVoice, listenOnce, say, stopSpeaking } from "../lib/speech.js";
+import { canListen, hasItalianVoice, isListening, listenOnce, say, stopListening, stopSpeaking } from "../lib/speech.js";
 import { MIC, SPEAKER } from "./icons.js";
 
 const MODE_KEYS = ["choice", "type", "listen", "recall"];
@@ -150,6 +150,7 @@ export function quitDrill() {
   el("drill").classList.remove("on");
   document.body.style.overflow = "";
   stopSpeaking();
+  stopListening();
   flip = null;
   app.render();
 }
@@ -157,6 +158,7 @@ export function quitDrill() {
 const isOpen = () => el("drill").classList.contains("on");
 
 function step() {
+  stopListening();
   answered = false;
   flip = null;
   el("dFoot").innerHTML = "";
@@ -238,9 +240,9 @@ function bindMic(host, card) {
   if (!btn) return;
   const out = host.querySelector("[data-micres]");
   btn.addEventListener("click", async () => {
-    btn.disabled = true;
+    if (isListening()) return stopListening(); // toinen napautus lopettaa
     btn.classList.add("rec");
-    out.textContent = "Kuuntelen…";
+    out.textContent = "Kuuntelen… napauta uudelleen lopettaaksesi";
     out.className = "micres";
     try {
       const heard = await listenOnce();
@@ -261,7 +263,6 @@ function bindMic(host, card) {
             ? "En kuullut mitään — yritä uudestaan."
             : "Puheentunnistus ei onnistunut.";
     } finally {
-      btn.disabled = false;
       btn.classList.remove("rec");
     }
   });
