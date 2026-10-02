@@ -137,7 +137,7 @@ function renderChat() {
       mic.classList.add("rec");
       label.textContent = "Lopeta";
       try {
-        form.m.value = (await listenOnce())[0];
+        form.m.value = (await listenOnce({ onPartial: (t) => (form.m.value = t) }))[0];
       } catch {
         /* ei puhetta — ei haittaa */
       }

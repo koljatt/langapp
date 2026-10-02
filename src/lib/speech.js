@@ -182,8 +182,15 @@ export const isListening = () => !!current;
  * vaihtoehdot parhaasta alkaen. Hylkää virheellä: "denied" (mikrofoni estetty),
  * "none" (ei puhetta) tai muu selaimen virhekoodi. Pysähtyy itsestään
  * `timeout` millisekunnin jälkeen, ettei mikrofoni jää päälle.
+ *
+ * iPhonen Safari antaa usein vain välitulokset (isFinal: false) ja lopettaa
+ * ilman lopullista tulosta, eikä se myöskään lopeta itse hiljaisuuden
+ * tultua. Siksi välitulokset kerätään talteen ja palautetaan, jos lopullista
+ * ei tule, ja kuuntelu lopetetaan itse, kun puhetta ei ole kuulunut
+ * `silence` millisekuntiin. `onPartial` saa tekstin sitä mukaa kuin sitä
+ * kuuluu, jotta käyttäjä näkee mikrofonin toimivan.
  */
-export function listenOnce({ timeout = 8000 } = {}) {
+export function listenOnce({ timeout = 8000, silence = 1500, onPartial } = {}) {
   return new Promise((resolve, reject) => {
     if (!Recognition) return reject(new Error("unsupported"));
     stopListening();
@@ -191,47 +198,60 @@ export function listenOnce({ timeout = 8000 } = {}) {
     const rec = new Recognition();
     rec.lang = "it-IT";
     rec.maxAlternatives = 5;
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.continuous = false;
     let done = false;
-    const finish = (fn) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      clearTimeout(hard);
-      if (current === rec) current = null;
-      fn();
-    };
-    // Ensin pyydetään siisti lopetus; jos selain ei silti lopeta, pakotetaan.
-    const timer = setTimeout(() => {
+    let heard = [];
+    let quiet = null;
+    const stop = () => {
       try {
         rec.stop();
       } catch {
         /* ei haittaa */
       }
-    }, timeout);
+    };
+    const finish = (fn) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      clearTimeout(hard);
+      clearTimeout(quiet);
+      if (current === rec) current = null;
+      fn();
+    };
+    // Kuultu teksti voittaa virheen: lopetus kesken välituloksen ei ole "ei puhetta".
+    const settle = (err) => finish(() => (heard.length ? resolve(heard) : reject(err)));
+    // Ensin pyydetään siisti lopetus; jos selain ei silti lopeta, pakotetaan.
+    const timer = setTimeout(stop, timeout);
     const hard = setTimeout(() => {
       try {
         rec.abort();
       } catch {
         /* ei haittaa */
       }
-      finish(() => reject(new Error("none")));
+      settle(new Error("none"));
     }, timeout + 2000);
-    rec.onresult = (e) => finish(() => resolve([...e.results[0]].map((a) => a.transcript)));
+    rec.onresult = (e) => {
+      const results = [...e.results];
+      const text = results.map((r) => r[0].transcript).join(" ").replace(/\s+/g, " ").trim();
+      if (!text) return;
+      heard = results.length === 1 ? [...results[0]].map((a) => a.transcript.trim()) : [text];
+      if (results.every((r) => r.isFinal)) return finish(() => resolve(heard));
+      if (onPartial) onPartial(text);
+      clearTimeout(quiet);
+      quiet = setTimeout(stop, silence);
+    };
     rec.onerror = (e) =>
-      finish(() =>
-        reject(
-          new Error(
-            e.error === "not-allowed" || e.error === "service-not-allowed"
-              ? "denied"
-              : e.error === "no-speech" || e.error === "aborted"
-                ? "none"
-                : e.error,
-          ),
+      settle(
+        new Error(
+          e.error === "not-allowed" || e.error === "service-not-allowed"
+            ? "denied"
+            : e.error === "no-speech" || e.error === "aborted"
+              ? "none"
+              : e.error,
         ),
       );
-    rec.onend = () => finish(() => reject(new Error("none")));
+    rec.onend = () => settle(new Error("none"));
     try {
       current = rec;
       rec.start();

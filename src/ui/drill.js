@@ -245,7 +245,7 @@ function bindMic(host, card) {
     out.textContent = "Kuuntelen… napauta uudelleen lopettaaksesi";
     out.className = "micres";
     try {
-      const heard = await listenOnce();
+      const heard = await listenOnce({ onPartial: (t) => (out.textContent = `Kuulen: ${t}`) });
       const verdict = judgeSpoken(heard, card);
       out.className = `micres ${verdict}`;
       out.textContent =
